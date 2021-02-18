@@ -20,7 +20,7 @@ N = axisN ** 3 # total number of particles N
 partAxisSep = 5 # the axial separation between two adjacent particles in the cube
 
 rodLength = 1 # rod length
-nRod = 4 # number of interaction points in rod. Must be greater than 1
+nRod = 5 # number of interaction points in rod. Must be greater than 1
 bondLength = rodLength/nRod # bond length between adjacent points in rod
 
 partMass = 1 # the mass of each whole rod-like particle
@@ -65,7 +65,6 @@ def init():
     plotAx = plotFig.add_subplot(111,projection="3d")
     plotAx.scatter(np.vstack(pos)[:,0:1],np.vstack(pos)[:,1:2],np.vstack(pos)[:,2:3])
     # plots all the lads
-    print(pos,"\n--------\n")
     
     return pos
 
@@ -86,11 +85,17 @@ def lincs(oldPos,newPos,truncOrder=1):
     coef = 0.5 #a prefactor, greatly simplified because rod
     A = np.zeros([N,K,K]) #the normalised constraint coupling matrix. I - B * B^T
     for i in range(N):
-        Bmult = B[i] @ B[i].T
-        A[i] = coef * (np.identity(K) - Bmult)
-        np.fill_diagonal(A[i],0)
+        Bmult = B[i] @ B[i].T #matrix product of B and its transpose
+        A[i] = np.identity(K) - (coef * Bmult) #fills A with coupling coefficients following A = 
+        '''THE FUDGE ZONE - A should have zeros on the diagonal and be zero where coupling between
+        unconnected bonds. The above fails in both these respects.'''
+        np.fill_diagonal(A[i],0) #fudge to make the diagonal zero
+        for j in range(2,K):
+            #for all diagonals except the main diagonal and first offset diagonals
+            np.fill_diagonal(A[i,j:],0) #fills the jth offset diagonal with zeros
+            np.fill_diagonal(A[i,:,j:],0) #in both directions
         #rhs[1,i] = S * (B[i] @ newBondVector - bondLength)
-    
+    print(A)
     
     def solve():
         #this function will do the actual legwork after the normalised constraint coupling matrix A
