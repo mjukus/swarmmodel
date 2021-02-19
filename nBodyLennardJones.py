@@ -32,7 +32,7 @@ fixingFactor = 0.01E-9
 _3D = True
 plot3D = True
 limits = True
-plotFrames = Nt
+plotFrames = 200
 
 
 def plots(x,y,c=None,xLabel="x / m",yLabel="y / m",zLabel="z / m"):
