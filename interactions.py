@@ -8,7 +8,7 @@ Created on Fri Feb 19 02:22:10 2021
 import numpy as np
 import tools
 
-def lennardJones(r,epsilon,sigma,cutoff):
+def lennardJones(r,epsilon,sigma,cutoff=False):
     
     rMinus6 = r**-6
     #cutoffMinus6 = cutoff**-6
@@ -29,16 +29,3 @@ r = np.linspace(1,4,100)
 force = lennardJones(r,1,1,1.5)
 
 tools.plot(r,force)
-
-def hydrodynamic_velocity(viscosity,Force,ForceDirection,Seperation,SeperationDirection):
-     
-    # Force magnitude of force dipole defined by swimming speed
-    # Force dipole direction is seperate and simply the direction the rod is swimming in
-    DirectionalDependence = np.dot(ForceDirection,SeperationDirection) 
-    # Essentially angle between force dipole direction and separation direction from point on another rod
-    #print(DirectionalDependence)
-    hydro_velocity = ((Force/(np.pi * 8 * viscosity * (Seperation**2))) * ((3*(DirectionalDependence**2))-1)) * SeperationDirection #calculation
-    #print (SeperationDirection)
-    #print(velocity)
-    
-    return hydro_velocity

@@ -34,7 +34,7 @@ sigma = 1
 Nt = 100 # number of timesteps
 timestep = 1 # size of timestep, in seconds
 t = 0 # sets the time to zero at the start
-plotFrames = 10
+plotFrames = Nt
 
 
 '''
@@ -44,15 +44,6 @@ Creates the system by producing a grid of particles using the parameters above.
 '''
 pos = initialise.init(axisN,partAxisSep,nRod,bondLength)
 
-#print(pos[:,:,0:1].reshape((N,4)),"\n-------\n",pos[:,:,0:1].reshape((N,4)).T)
-x = pos[:,:,0:1].reshape((N,4))
-#dx = x.T - x[:,:,np.newaxis,np.newaxis]
-#print("\n--------\n",dx)
-
-#dx = np.zeros((N,nRod,nRod,N))
-for i in range(1,N-1):
-    print(x[:i])
-    print(x[i+1:])
 
 
 '''
@@ -64,14 +55,28 @@ approximation, particle self-propulsion and an infinite potential well. TO BE IM
 '''
 def acceleration(pos):
     
+    x = pos[:,:,0:1].reshape((N,nRod))
+    dx = x.T - x[:,:,np.newaxis,np.newaxis] #creates a 4D! tensor of x separations
+    y = pos[:,:,1:2].reshape((N,nRod))
+    dy = y.T - y[:,:,np.newaxis,np.newaxis]
+    z = pos[:,:,2:3].reshape((N,nRod))
+    dz = z.T - z[:,:,np.newaxis,np.newaxis]
+    
+    for i in range(N):
+        dx[i,:,:,i] = 0
+        dy[i,:,:,i] = 0
+        dz[i,:,:,i] = 0
+    
+    r = (dx**2 + dy**2 + dz**2)**0.5
+    
     a = np.zeros((N,nRod,3)) # zero acceleration for now
     
-    #LJForce = interactions.lennardJones(r,epsilon,sigma,cutoff)
+    LJForce = interactions.lennardJones(r,epsilon,sigma)
     
     return a
 
 
-v = 0.1*np.random.randn(N,3) # random velocities
+v = 0.1*np.random.randn(N,3) # random velocities, this is testing code really
 v = np.repeat([v],nRod,axis=1).reshape(N,nRod,3) # same for each point in a particle
 a = acceleration(pos)
 
