@@ -35,8 +35,8 @@ def hydrodynamic_velocity(viscosity,Force,ForceDirection,Seperation,SeperationDi
     P = Force  # im stupid
     DirectionalDependence = np.dot(ForceDirection,SeperationDirection)  # Essentially angle between force and position 
     #print(DirectionalDependence)
-    velocity = ((P/(np.pi * 8 * viscosity * (Seperation**2))) * ((3*(DirectionalDependence**2))-1)) * SeperationDirection #calculation
+    hydro_velocity = ((P/(np.pi * 8 * viscosity * (Seperation**2))) * ((3*(DirectionalDependence**2))-1)) * SeperationDirection #calculation
     #print (SeperationDirection)
     #print(velocity)
     
-    return velocity
+    return hydro_velocity
