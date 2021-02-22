@@ -16,8 +16,8 @@ def lennardJones(r,epsilon,sigma,cutoff=False):
     
     A = 4 * epsilon * sigmaPower6**2
     B = 4 * epsilon * sigmaPower6
-    potential = A*rMinus6**2 - B*rMinus6
     
+    #potential = A*rMinus6**2 - B*rMinus6
     #shift = cutoff**-1 * (12*A*cutoffMinus6**2 - 6*B*cutoffMinus6)
     
     force = r**-1 * (12*A*rMinus6**2 - 6*B*rMinus6) #- shift
@@ -28,7 +28,7 @@ def lennardJones(r,epsilon,sigma,cutoff=False):
 r = np.linspace(1,4,100)
 force = lennardJones(r,1,1,1.5)
 
-tools.plot(r,force)
+#tools.plot(r,force)
 
 def hydrodynamic_velocity(viscosity,Force,ForceDirection,Seperation,SeperationDirection):
      

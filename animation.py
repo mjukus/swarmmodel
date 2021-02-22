@@ -7,24 +7,25 @@ Created on Wed Nov 18 10:48:09 2020
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+import matplotlib.animation as animation
+import tools
 
-fig, ax = plt.subplots()
-xdata, ydata = [],[]
-ln, = plt.plot([],[],"ro")
-
-def init():
-    ax.set_xlim(0,2*np.pi)
-    ax.set_ylim(-1,1)
-    return ln,
+def animate(frames,data,plot):
     
-def update(frame):
-    xdata.append(frame)
-    ydata.append(np.sin(frame))
-    ln.set_data(xdata,ydata)
-    return ln,
+    for i in range(data[0,1].shape[0]):
+        plot[i]._offsets3d = (data[frames,0:1,i],data[frames,1:2,i],data[frames,2:3,i])
+    #plot._offsets3d = (data[frames,0:1],data[frames,1:2],data[frames,2:3])
+    
+    return plot
 
-ani = FuncAnimation(fig,update,frames=np.linspace(0,2*np.pi,128),
-                    init_func=init,blit=True)
+def main(data):
 
-plt.show()
+    fig, ax, plot = tools.plot(data[0,0:1],data[0,1:2],data[0,2:3])
+    
+    scatter = [ ax.scatter(data[0,0:1,i],data[0,1:2,i],data[0,2:3,i]) for i in range(data[0,1].shape[0]) ]
+    
+    frames = len(data)
+    
+    ani = animation.FuncAnimation(fig, animate, frames, interval=50, fargs=(data,scatter))
+    
+    g

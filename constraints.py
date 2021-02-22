@@ -47,6 +47,8 @@ def bondCon(pos,bondLength,nRod):
     
     bondDir = centreMag[:,np.newaxis]**-1 * centre
     # calculates the unit vectors describing particle direction using the centres
+    particleTails += centre - (0.5 * bondLength * nRod * bondDir)
+    # finds the new positions of the particle tails post-constraint
     
     pos = tools.bondVectorGen(particleTails,bondDir,bondLength,nRod)
     # calls tools.bondVectorGen, which generates an array of position vectors for all the points in all the

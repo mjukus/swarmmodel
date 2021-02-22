@@ -52,7 +52,7 @@ def init(axisN,partAxisSep,nRod,bondLength,centre=0):
     # calls tools.bondVectorGen, which generates an array of position vectors for all the points in all the
     # particles
     
-    tools.plot(np.vstack(pos)[:,0:1],np.vstack(pos)[:,1:2],np.vstack(pos)[:,2:3])
+    #tools.plot(np.vstack(pos)[:,0:1],np.vstack(pos)[:,1:2],np.vstack(pos)[:,2:3])
     # plots the starting state of the system in 3 dimensions
     
     return pos
