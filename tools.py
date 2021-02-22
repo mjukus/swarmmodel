@@ -61,4 +61,6 @@ def plot(x,y,z=0):
     '''
     plotFig = plt.figure()
     plotAx = plotFig.add_subplot(111,projection="3d")
-    plotAx.scatter(x,y,z)
+    plot = plotAx.scatter(x,y,z)
+    
+    return plotFig, plotAx, plot
