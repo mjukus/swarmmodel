@@ -29,3 +29,14 @@ r = np.linspace(1,4,100)
 force = lennardJones(r,1,1,1.5)
 
 tools.plot(r,force)
+
+def hydrodynamic_velocity(viscosity,Force,ForceDirection,Seperation,SeperationDirection):
+    
+    P = Force  # im stupid
+    DirectionalDependence = np.dot(ForceDirection,SeperationDirection)  # Essentially angle between force and position 
+    #print(DirectionalDependence)
+    velocity = ((P/(np.pi * 8 * viscosity * (Seperation**2))) * ((3*(DirectionalDependence**2))-1)) * SeperationDirection #calculation
+    #print (SeperationDirection)
+    #print(velocity)
+    
+    return velocity
