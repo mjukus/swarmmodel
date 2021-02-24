@@ -39,7 +39,7 @@ swimmingSpeed = 0.1 # The hydrodynamics parameters, Speed should be approx 20.4 
 hydrodynamicThrust = 1 #Should be approx 0.57 pN
 viscosity = 1
 
-Nt = 300 # number of timesteps
+Nt = 100 # number of timesteps
 timestep = 0.001 # size of timestep, in seconds
 t = 0 # sets the time to zero at the start
 plotFrames = 10
@@ -60,9 +60,7 @@ Each timestep, the forces acting on each point in every particle are calculated 
 change the system. The "forces" are additive and are a Lennard-Jones potential between particles, a hydrodynamic
 approximation, particle self-propulsion and an infinite potential well. TO BE IMPLEMENTED: ALL OF IT.
 '''
-def acceleration(pos):
-    
-    r, sepDir = tools.separation(pos,N,nRod) # calculates separations between points and returns 
+def acceleration(pos,r,sepDir): 
     
     LJForce = interactions.lennardJones(r,epsilon,sigma) # calls Lennard-Jones function
     
@@ -76,9 +74,7 @@ def acceleration(pos):
     
     return a
 
-def velocity(pos):
-    
-    r, sepDir = tools.separation(pos,N,nRod)
+def velocity(pos,r,sepDir):
     
     particleTails = pos[:,0] # the positions of the two ends of the particles - the heads and tails
     particleHeads = pos[:,-1]
@@ -96,8 +92,9 @@ def velocity(pos):
     
     return velocity
 
-v = velocity(pos)
-a = acceleration(pos)
+r, sepDir = tools.separation(pos,N,nRod)
+v = velocity(pos,r,sepDir)
+a = acceleration(pos,r,sepDir)
 
 data = np.zeros((Nt+1,3,N,nRod)) # array describing the positions of all points over time
 data[0] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]]) # adds the initial positions to data
@@ -106,8 +103,9 @@ for i in range(Nt):
     
     v += a * timestep / 2.0
     pos += v * timestep
-    velocityIncrease = velocity(pos)
-    a = acceleration(pos)
+    r,sepDir = tools.separation(pos,N,nRod)
+    velocityIncrease = velocity(pos,r,sepDir)
+    a = acceleration(pos,r,sepDir)
     v += velocityIncrease + a * timestep / 2.0
     t += timestep
     
