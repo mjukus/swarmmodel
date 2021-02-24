@@ -17,7 +17,7 @@ KEY PARAMETERS
 --------------
 These parameters define the system. TO BE IMPLEMENTED: INPUTS? AND REALISTIC NUMBERS.
 '''
-axisN = 10 # the number of particles on each axis of a cube. Used to create a grid of particles at the start.
+axisN = 2 # the number of particles on each axis of a cube. Used to create a grid of particles at the start.
 N = axisN ** 3
 partAxisSep = 5 # the axial separation of each particle on the cube from the next.
 
@@ -28,9 +28,15 @@ bondStiffness = 1
 
 partMass = 1 #the mass of each whole rod-like particle, approx 1 picogram
 pointMass = partMass/nRod #the mass of each point in a particle
+invPointMass = 1 / pointMass #inverse mass of each point in a particle
 
 epsilon = 1 # the Lennard-Jones parameters
 sigma = 1
+cutoff = 2 * sigma # truncation point above which potential is assumed zero
+fixingFactor = 0.01E-15
+
+swimmingSpeed = 1 # The hydrodynamics parameters, Speed should be approx 20.4 µm/s
+hydrodynamicThrust = 1 #Should be approx 0.57 pN
 
 swimmingSpeed = 1 # The hydrodynamics parameters, Speed should be approx 20.4 µm/s
 hydrodynamicThrust = 1 #Should be approx 0.57 pN
@@ -59,32 +65,34 @@ approximation, particle self-propulsion and an infinite potential well. TO BE IM
 def acceleration(pos):
     
     x = pos[:,:,0:1].reshape((N,nRod))
-    dx = x.T - x[:,:,np.newaxis,np.newaxis] #creates a 4D! tensor of x separations
+    dx = x.T - x[:,:,np.newaxis,np.newaxis] #creates 4D! tensors of x, y and z separations
     y = pos[:,:,1:2].reshape((N,nRod))
-    dy = y.T - y[:,:,np.newaxis,np.newaxis]
+    dy = y.T - y[:,:,np.newaxis,np.newaxis] #let me take a moment to apologise for my constant reshaping
     z = pos[:,:,2:3].reshape((N,nRod))
-    dz = z.T - z[:,:,np.newaxis,np.newaxis]
+    dz = z.T - z[:,:,np.newaxis,np.newaxis] #it cannot possibly be efficient
     
     for i in range(N):
-        dx[i,:,:,i] = 0
-        dy[i,:,:,i] = 0
-        dz[i,:,:,i] = 0
+        dx[i,:,:,i] = 0 # ensures that every point in a particle has zero separation
+        dy[i,:,:,i] = 0 # from every other in the same particle. Seems kinda pointless
+        dz[i,:,:,i] = 0 # now unless all zeros are purged before LJ is calculated.
     
-    r = (dx**2 + dy**2 + dz**2)**0.5
+    r = (dx**2 + dy**2 + dz**2)**0.5 # calculate magnitude of separations
+    r = r[r != 0].reshape(N,nRod,nRod,N-1) # remove all zeros to avoid nan in force
     
     a = np.zeros((N,nRod,3)) # zero acceleration for now
     
-    LJForce = interactions.lennardJones(r,epsilon,sigma)
+    LJForce = interactions.lennardJones(r,epsilon,sigma) # calls lennard jones function
+    LJForce = np.einsum("ijkl->ij",LJForce) # sums all forces on the same point to give resultant LJ force on each
     
     return a
 
 
-v = 0.025*np.random.randn(N,nRod,3) # random velocities, this is testing code really
+v = 0.01*np.random.randn(N,nRod,3) # random velocities, this is testing code really
 #v = np.repeat([v],nRod,axis=1).reshape(N,nRod,3) # same for each point in a particle
 a = acceleration(pos)
 
-data = np.zeros((Nt+1,3,N,nRod))
-data[0] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]])
+data = np.zeros((Nt+1,3,N,nRod)) # array describing the positions of all points over time
+data[0] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]]) # adds the initial positions to data
 
 for i in range(Nt):
     v += a * timestep / 2.0
@@ -106,6 +114,6 @@ for i in range(Nt):
     '''
     pos = constraints.bondCon(pos,bondLength,nRod) # sharply constrains the bonds to bondLength
     
-    data[i+1] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]])
+    data[i+1] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]]) #adds the positions for the current timestep to data
     
-#animation.main(data.reshape(Nt+1,3,N*nRod))
+#animation.main(data.reshape(Nt+1,3,N*nRod)) # calls the animation function. It is janky.
