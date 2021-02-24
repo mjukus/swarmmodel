@@ -22,7 +22,7 @@ N = axisN ** 3
 partAxisSep = 5 # the axial separation of each particle on the cube from the next.
 
 rodLength = 1 # length of each rod-like particle, approx 2µm. Diameter approx 1µm, Vol approx 1µm**3
-nRod = 2 # number of interaction points in rod. Must be greater than 1
+nRod = 4 # number of interaction points in rod. Must be greater than 1
 bondLength = rodLength / (nRod-1) # bond length between adjacent points in rod. nRod-1 because there is a point at 0. 
 bondStiffness = 1
 
@@ -34,6 +34,9 @@ epsilon = 1 # the Lennard-Jones parameters
 sigma = 1
 cutoff = 2 * sigma # truncation point above which potential is assumed zero
 fixingFactor = 0.01E-15
+
+swimmingSpeed = 1 # The hydrodynamics parameters, Speed should be approx 20.4 µm/s
+hydrodynamicThrust = 1 #Should be approx 0.57 pN
 
 swimmingSpeed = 1 # The hydrodynamics parameters, Speed should be approx 20.4 µm/s
 hydrodynamicThrust = 1 #Should be approx 0.57 pN
