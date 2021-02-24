@@ -43,6 +43,28 @@ def bondVectorGen(grid,bondDir,bondLength,nRod):
     
     return pos
 
+def separation(pos,N,nRod):
+    
+    x = pos[:,:,0:1].reshape((N,nRod))
+    dx = x.T - x[:,:,np.newaxis,np.newaxis] #creates 4D! tensors of x, y and z separations
+    y = pos[:,:,1:2].reshape((N,nRod))
+    dy = y.T - y[:,:,np.newaxis,np.newaxis] #let me take a moment to apologise for my constant reshaping
+    z = pos[:,:,2:3].reshape((N,nRod))
+    dz = z.T - z[:,:,np.newaxis,np.newaxis] #it cannot possibly be efficient
+    
+    for i in range(N):
+        dx[i,:,:,i] = 0 # ensures that every point in a particle has zero separation
+        dy[i,:,:,i] = 0 # from every other in the same particle. Seems kinda pointless
+        dz[i,:,:,i] = 0 # now unless all zeros are purged before LJ is calculated.
+    
+    r = (dx**2 + dy**2 + dz**2)**0.5 # calculate magnitude of separations
+    sepDir = np.array([dx * r**-1, dy * r**-1, dz * r**-1]) # array of separation directions
+    
+    r = r[r != 0].reshape(N,nRod,nRod,N-1) # remove all zeros to avoid nan in force
+    sepDir = sepDir[np.isfinite(sepDir)].reshape(3,N,nRod,nRod,N-1)
+    
+    return r, sepDir
+
 def plot(x,y,z=0):
     '''
     Simple 3D scatter plotting function. Hope to replace/improve with an animated thing.

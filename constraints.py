@@ -44,12 +44,10 @@ def bondCon(pos,bondLength,nRod):
     # the mean of the head and tail position relative to the tail - the centre of the particle
     centreMag = np.linalg.norm(centre, axis=1)
     # the magnitude of the vectors describing the middle of the particles
-    
     bondDir = centreMag[:,np.newaxis]**-1 * centre
     # calculates the unit vectors describing particle direction using the centres
-    particleTails += centre - (0.5 * bondLength * nRod * bondDir)
+    particleTails += centre - (0.5 * bondLength * (nRod-1) * bondDir)
     # finds the new positions of the particle tails post-constraint
-    
     pos = tools.bondVectorGen(particleTails,bondDir,bondLength,nRod)
     # calls tools.bondVectorGen, which generates an array of position vectors for all the points in all the
     # particles
