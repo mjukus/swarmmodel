@@ -17,7 +17,7 @@ KEY PARAMETERS
 --------------
 These parameters define the system. TO BE IMPLEMENTED: INPUTS? AND REALISTIC NUMBERS.
 '''
-axisN = 2 # the number of particles on each axis of a cube. Used to create a grid of particles at the start.
+axisN = 3 # the number of particles on each axis of a cube. Used to create a grid of particles at the start.
 N = axisN ** 3
 partAxisSep = 5 # the axial separation of each particle on the cube from the next.
 
@@ -35,14 +35,12 @@ sigma = 1
 cutoff = 2 * sigma # truncation point above which potential is assumed zero
 fixingFactor = 0.01E-15
 
-swimmingSpeed = 1 # The hydrodynamics parameters, Speed should be approx 20.4 µm/s
+swimmingSpeed = 0.1 # The hydrodynamics parameters, Speed should be approx 20.4 µm/s
 hydrodynamicThrust = 1 #Should be approx 0.57 pN
+viscosity = 1
 
-swimmingSpeed = 1 # The hydrodynamics parameters, Speed should be approx 20.4 µm/s
-hydrodynamicThrust = 1 #Should be approx 0.57 pN
-
-Nt = 100 # number of timesteps
-timestep = 1 # size of timestep, in seconds
+Nt = 300 # number of timesteps
+timestep = 0.001 # size of timestep, in seconds
 t = 0 # sets the time to zero at the start
 plotFrames = 10
 
@@ -64,46 +62,59 @@ approximation, particle self-propulsion and an infinite potential well. TO BE IM
 '''
 def acceleration(pos):
     
-    x = pos[:,:,0:1].reshape((N,nRod))
-    dx = x.T - x[:,:,np.newaxis,np.newaxis] #creates 4D! tensors of x, y and z separations
-    y = pos[:,:,1:2].reshape((N,nRod))
-    dy = y.T - y[:,:,np.newaxis,np.newaxis] #let me take a moment to apologise for my constant reshaping
-    z = pos[:,:,2:3].reshape((N,nRod))
-    dz = z.T - z[:,:,np.newaxis,np.newaxis] #it cannot possibly be efficient
+    r, sepDir = tools.separation(pos,N,nRod) # calculates separations between points and returns 
     
-    for i in range(N):
-        dx[i,:,:,i] = 0 # ensures that every point in a particle has zero separation
-        dy[i,:,:,i] = 0 # from every other in the same particle. Seems kinda pointless
-        dz[i,:,:,i] = 0 # now unless all zeros are purged before LJ is calculated.
+    LJForce = interactions.lennardJones(r,epsilon,sigma) # calls Lennard-Jones function
     
-    r = (dx**2 + dy**2 + dz**2)**0.5 # calculate magnitude of separations
-    r = r[r != 0].reshape(N,nRod,nRod,N-1) # remove all zeros to avoid nan in force
+    a_x = invPointMass * sepDir[0] * LJForce
+    a_y = invPointMass * sepDir[1] * LJForce
+    a_z = invPointMass * sepDir[2] * LJForce
     
-    a = np.zeros((N,nRod,3)) # zero acceleration for now
     
-    LJForce = interactions.lennardJones(r,epsilon,sigma) # calls lennard jones function
-    LJForce = np.einsum("ijkl->ij",LJForce) # sums all forces on the same point to give resultant LJ force on each
+    a_x, a_y, a_z = (np.einsum("ijkl->ij", a_x), np.einsum("ijkl->ij", a_y), np.einsum("ijkl->ij", a_z))
+    a = np.transpose(np.array([a_x,a_y,a_z]),[1,2,0])
     
     return a
 
+def velocity(pos):
+    
+    r, sepDir = tools.separation(pos,N,nRod)
+    
+    particleTails = pos[:,0] # the positions of the two ends of the particles - the heads and tails
+    particleHeads = pos[:,-1]
+    centre = 0.5 * (particleHeads - particleTails)
+    # the mean of the head and tail position relative to the tail - the centre of the particle
+    centreMag = np.linalg.norm(centre, axis=1)
+    # the magnitude of the vectors describing the middle of the particles
+    
+    bondDir = (centreMag[:,np.newaxis]**-1 * centre)
+    
+    swimmingVelocity = swimmingSpeed * np.repeat([bondDir],nRod,axis=1).reshape(N,nRod,3)
+    
+    hydroVelocity = interactions.hydrodynamic_velocity(viscosity,hydrodynamicThrust,bondDir,r,sepDir)
+    velocity = swimmingVelocity + hydroVelocity
+    
+    return velocity
 
-v = 0.01*np.random.randn(N,nRod,3) # random velocities, this is testing code really
-#v = np.repeat([v],nRod,axis=1).reshape(N,nRod,3) # same for each point in a particle
+v = velocity(pos)
 a = acceleration(pos)
 
 data = np.zeros((Nt+1,3,N,nRod)) # array describing the positions of all points over time
 data[0] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]]) # adds the initial positions to data
 
 for i in range(Nt):
+    
     v += a * timestep / 2.0
     pos += v * timestep
+    velocityIncrease = velocity(pos)
     a = acceleration(pos)
-    v += a * timestep / 2.0
+    v += velocityIncrease + a * timestep / 2.0
     t += timestep
     
     
     #if i % (plotFrames - 1) == 0:
     #        tools.plot(np.vstack(pos)[:,0:1],np.vstack(pos)[:,1:2],np.vstack(pos)[:,2:3])
+    #data[2*i] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]])
 
     '''
     CONSTRAINTS
@@ -116,4 +127,4 @@ for i in range(Nt):
     
     data[i+1] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]]) #adds the positions for the current timestep to data
     
-#animation.main(data.reshape(Nt+1,3,N*nRod)) # calls the animation function. It is janky.
+animation.main(data.reshape(Nt+1,3,N*nRod)) # calls the animation function. It is janky.
