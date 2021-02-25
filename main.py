@@ -39,10 +39,10 @@ swimmingSpeed = 20.4E-6 # The hydrodynamics parameters, Speed should be approx 2
 hydrodynamicThrust = 0.57E-12 / nRod #Should be approx 0.57 pN
 viscosity = 1
 
-Nt = 500 # number of timesteps
-timestep = 1E-4 # size of timestep, in seconds
+Nt = 2000 # number of timesteps
+timestep = 1E-8 # size of timestep, in seconds
 t = 0 # sets the time to zero at the start
-plotFrames = 10
+plotFrames = 1000
 
 
 '''
@@ -111,10 +111,6 @@ for i in range(Nt):
     vAccel += a * timestep / 2.0
     t += timestep
     
-    
-    #if i % (plotFrames - 1) == 0:
-    #        tools.plot(np.vstack(pos)[:,0:1],np.vstack(pos)[:,1:2],np.vstack(pos)[:,2:3])
-    #data[2*i] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]])
 
     '''
     CONSTRAINTS
@@ -124,7 +120,7 @@ for i in range(Nt):
     particles. TO BE IMPLEMENTED: ANGLE CONSTRAINTS.
     '''
     
-    
+    #if i % (plotFrames - 1) == 0:
     data[i+1] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]]) #adds the positions for the current timestep to data
     
 animation.main(data.reshape(Nt+1,3,N*nRod)) # calls the animation function. It is janky.

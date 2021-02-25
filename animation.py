@@ -27,6 +27,6 @@ def main(data):
     
     frames = len(data)
     
-    ani = animation.FuncAnimation(fig, animate, frames, interval=20, fargs=(data,scatter))
+    ani = animation.FuncAnimation(fig, animate, frames, interval=5, fargs=(data,scatter))
     
     g
