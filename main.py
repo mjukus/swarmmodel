@@ -19,28 +19,28 @@ These parameters define the system. TO BE IMPLEMENTED: INPUTS? AND REALISTIC NUM
 '''
 axisN = 3 # the number of particles on each axis of a cube. Used to create a grid of particles at the start.
 N = axisN ** 3
-partAxisSep = 5 # the axial separation of each particle on the cube from the next.
+partAxisSep = 2E-5 # the axial separation of each particle on the cube from the next.
 
-rodLength = 1 # length of each rod-like particle, approx 2µm. Diameter approx 1µm, Vol approx 1µm**3
+rodLength = 2E-6 # length of each rod-like particle, approx 2µm. Diameter approx 1µm, Vol approx 1µm**3
 nRod = 4 # number of interaction points in rod. Must be greater than 1
 bondLength = rodLength / (nRod-1) # bond length between adjacent points in rod. nRod-1 because there is a point at 0. 
 bondStiffness = 1
 
-partMass = 1 #the mass of each whole rod-like particle, approx 1 picogram
+partMass = 1E-15 #the mass of each whole rod-like particle, approx 1 picogram
 pointMass = partMass/nRod #the mass of each point in a particle
 invPointMass = 1 / pointMass #inverse mass of each point in a particle
 
-epsilon = 1 # the Lennard-Jones parameters
-sigma = 1
+epsilon = 4E-21 # the Lennard-Jones parameters
+sigma = 1E-6
 cutoff = 2 * sigma # truncation point above which potential is assumed zero
 fixingFactor = 0.01E-15
 
-swimmingSpeed = 0.1 # The hydrodynamics parameters, Speed should be approx 20.4 µm/s
-hydrodynamicThrust = 1 #Should be approx 0.57 pN
+swimmingSpeed = 20.4E-6 # The hydrodynamics parameters, Speed should be approx 20.4 µm/s
+hydrodynamicThrust = 0.57E-12 / nRod #Should be approx 0.57 pN
 viscosity = 1
 
-Nt = 100 # number of timesteps
-timestep = 0.001 # size of timestep, in seconds
+Nt = 500 # number of timesteps
+timestep = 1E-6 # size of timestep, in seconds
 t = 0 # sets the time to zero at the start
 plotFrames = 10
 
@@ -93,7 +93,8 @@ def velocity(pos,r,sepDir):
     return velocity
 
 r, sepDir = tools.separation(pos,N,nRod)
-v = velocity(pos,r,sepDir)
+baseVelocity = velocity(pos,r,sepDir)
+vAccel = np.zeros((N,nRod,3))
 a = acceleration(pos,r,sepDir)
 
 data = np.zeros((Nt+1,3,N,nRod)) # array describing the positions of all points over time
@@ -101,12 +102,12 @@ data[0] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]]) # adds the initial positi
 
 for i in range(Nt):
     
-    v += a * timestep / 2.0
-    pos += v * timestep
+    vAccel += a * timestep / 2.0
+    pos += (vAccel + baseVelocity) * timestep
     r,sepDir = tools.separation(pos,N,nRod)
-    velocityIncrease = velocity(pos,r,sepDir)
+    baseVelocity = velocity(pos,r,sepDir)
     a = acceleration(pos,r,sepDir)
-    v += velocityIncrease + a * timestep / 2.0
+    vAccel += a * timestep / 2.0
     t += timestep
     
     
