@@ -40,7 +40,7 @@ hydrodynamicThrust = 0.57E-12 / nRod #Should be approx 0.57 pN
 viscosity = 1
 
 Nt = 500 # number of timesteps
-timestep = 1E-6 # size of timestep, in seconds
+timestep = 1E-4 # size of timestep, in seconds
 t = 0 # sets the time to zero at the start
 plotFrames = 10
 
@@ -104,6 +104,7 @@ for i in range(Nt):
     
     vAccel += a * timestep / 2.0
     pos += (vAccel + baseVelocity) * timestep
+    pos = constraints.bondCon(pos,bondLength,nRod) # sharply constrains the bonds to bondLength
     r,sepDir = tools.separation(pos,N,nRod)
     baseVelocity = velocity(pos,r,sepDir)
     a = acceleration(pos,r,sepDir)
@@ -122,7 +123,7 @@ for i in range(Nt):
     constrain first the angles of the particles to keep the rods straight, followed by the lengths of the
     particles. TO BE IMPLEMENTED: ANGLE CONSTRAINTS.
     '''
-    pos = constraints.bondCon(pos,bondLength,nRod) # sharply constrains the bonds to bondLength
+    
     
     data[i+1] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]]) #adds the positions for the current timestep to data
     
