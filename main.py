@@ -30,20 +30,19 @@ partMass = 1E-15 #the mass of each whole rod-like particle, approx 1 picogram
 pointMass = partMass/nRod #the mass of each point in a particle
 invPointMass = 1 / pointMass #inverse mass of each point in a particle
 
+Nt = 200 # number of timesteps
+timestep = 3E-6 # size of timestep, in seconds
+t = 0 # sets the time to zero at the start
+plotFrames = 10
+
 epsilon = 4E-21 # the Lennard-Jones parameters
 sigma = 1E-6
 cutoff = 2 * sigma # truncation point above which potential is assumed zero
-fixingFactor = 0.01E-15
+forceCap = 1E-26
 
 swimmingSpeed = 20.4E-6 # The hydrodynamics parameters, Speed should be approx 20.4 µm/s
 hydrodynamicThrust = 0.57E-12 / nRod #Should be approx 0.57 pN
 viscosity = 1
-
-Nt = 2000 # number of timesteps
-timestep = 1E-8 # size of timestep, in seconds
-t = 0 # sets the time to zero at the start
-plotFrames = 1000
-
 
 '''
 INITIALISATION
@@ -51,7 +50,6 @@ INITIALISATION
 Creates the system by producing a grid of particles using the parameters above.
 '''
 pos = initialise.init(axisN,partAxisSep,nRod,bondLength)
-
 
 '''
 INTERACTIONS
@@ -62,7 +60,7 @@ approximation, particle self-propulsion and an infinite potential well. TO BE IM
 '''
 def acceleration(pos,r,sepDir): 
     
-    LJForce = interactions.lennardJones(r,epsilon,sigma) # calls Lennard-Jones function
+    LJForce = interactions.lennardJones(r,epsilon,sigma,forceCap) # calls Lennard-Jones function
     
     a_x = invPointMass * sepDir[0] * LJForce
     a_y = invPointMass * sepDir[1] * LJForce
@@ -122,5 +120,6 @@ for i in range(Nt):
     
     #if i % (plotFrames - 1) == 0:
     data[i+1] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]]) #adds the positions for the current timestep to data
-    
-animation.main(data.reshape(Nt+1,3,N*nRod)) # calls the animation function. It is janky.
+
+np.save("output",data)
+#animation.main(data.reshape(Nt+1,3,N*nRod)) # calls the animation function. It is janky.
