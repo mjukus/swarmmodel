@@ -8,7 +8,7 @@ Created on Fri Feb 19 02:22:10 2021
 import numpy as np
 import tools
 
-def lennardJones(r,epsilon,sigma,cutoff=False):
+def lennardJones(r,epsilon,sigma,forceCap,cutoff=False):
     
     rMinus6 = r**-6
     #cutoffMinus6 = cutoff**-6
@@ -21,7 +21,7 @@ def lennardJones(r,epsilon,sigma,cutoff=False):
     #shift = cutoff**-1 * (12*A*cutoffMinus6**2 - 6*B*cutoffMinus6)
     
     force = r**-1 * (12*A*rMinus6**2 - 6*B*rMinus6) #- shift
-    #force[r >= cutoff] = 0
+    force[force > forceCap] = forceCap
     
     return force
     
