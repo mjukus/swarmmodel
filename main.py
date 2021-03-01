@@ -44,12 +44,10 @@ swimmingSpeed = 20.4E-6 # The hydrodynamics parameters, Speed should be approx 2
 hydrodynamicThrust = 0.57E-12 / nRod #Should be approx 0.57 pN
 viscosity = 1
 
-
 '''
 INITIALISATION
 --------------
-Creates the system by producing a grid of particles using the parameters above. Also creates a file for storage
-of the output.
+Creates the system by producing a grid of particles using the parameters above.
 '''
 pos = initialise.init(axisN,partAxisSep,nRod,bondLength)
 
