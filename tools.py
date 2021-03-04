@@ -7,8 +7,9 @@ Created on Fri Feb 19 00:48:17 2021
 
 import numpy as np
 import matplotlib.pyplot as plt
-#from numba import jit
+from numba import jit
 
+@jit(forceobj=True) # np.tensordot not supported by numba. Pain to remove.
 def bondVectorGen(grid,bondDir,bondLength,nRod):
     '''
     Generates an N x nRod x 3 array containing the positions of all points in all particles from a grid of
@@ -44,25 +45,37 @@ def bondVectorGen(grid,bondDir,bondLength,nRod):
     
     return pos
 
+#@jit # jit is currently being a bit problematic
 def separation(pos,N,nRod):
     
-    x = pos[:,:,0:1].reshape((N,nRod))
+    x = pos[:,:,0:1].copy()
+    x = x.reshape((N,nRod))
     dx = x.T - x[:,:,np.newaxis,np.newaxis] #creates 4D! tensors of x, y and z separations
-    y = pos[:,:,1:2].reshape((N,nRod))
+    y = pos[:,:,1:2].copy()
+    y = y.reshape((N,nRod))
     dy = y.T - y[:,:,np.newaxis,np.newaxis] #let me take a moment to apologise for my constant reshaping
-    z = pos[:,:,2:3].reshape((N,nRod))
+    z = pos[:,:,2:3].copy()
+    z = z.reshape((N,nRod))
     dz = z.T - z[:,:,np.newaxis,np.newaxis] #it cannot possibly be efficient
     
     for i in range(N):
         dx[i,:,:,i] = 0 # ensures that every point in a particle has zero separation
-        dy[i,:,:,i] = 0 # from every other in the same particle. Seems kinda pointless
-        dz[i,:,:,i] = 0 # now unless all zeros are purged before LJ is calculated.
+        dy[i,:,:,i] = 0 # from every other in the same particle.
+        dz[i,:,:,i] = 0
     
     r = (dx**2 + dy**2 + dz**2)**0.5 # calculate magnitude of separations
-    sepDir = np.array([dx * r**-1, dy * r**-1, dz * r**-1]) # array of separation directions
     
+    #dx = dx.flatten() # flatten so numba works
+    #dy = dy.flatten()
+    #dz = dz.flatten()
+    #r = r.flatten()
+    
+    dx = dx[r != 0].reshape(N,nRod,nRod,N-1)
+    dy = dy[r != 0].reshape(N,nRod,nRod,N-1)
+    dz = dz[r != 0].reshape(N,nRod,nRod,N-1)
     r = r[r != 0].reshape(N,nRod,nRod,N-1) # remove all zeros to avoid nan in force
-    sepDir = sepDir[np.isfinite(sepDir)].reshape(3,N,nRod,nRod,N-1)
+    
+    sepDir = np.array([dx * r**-1, dy * r**-1, dz * r**-1]) # array of separation directions
     
     return r, sepDir
 
@@ -84,6 +97,11 @@ def plot(x,y,z=0):
     '''
     plotFig = plt.figure()
     plotAx = plotFig.add_subplot(111,projection="3d")
+    
+    plotAx.set_xlabel("x")
+    plotAx.set_ylabel("y")
+    plotAx.set_zlabel("z")
+    
     plot = plotAx.scatter(x,y,z)
     
     return plotFig, plotAx, plot
