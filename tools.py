@@ -7,6 +7,7 @@ Created on Fri Feb 19 00:48:17 2021
 
 import numpy as np
 import matplotlib.pyplot as plt
+#from numba import jit
 
 def bondVectorGen(grid,bondDir,bondLength,nRod):
     '''

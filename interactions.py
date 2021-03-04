@@ -6,8 +6,9 @@ Created on Fri Feb 19 02:22:10 2021
 """
 
 import numpy as np
-import tools
+from numba import jit
 
+@jit
 def lennardJones(r,epsilon,sigma,forceCap,cutoff=False):
     
     rMinus6 = r**-6
@@ -21,14 +22,12 @@ def lennardJones(r,epsilon,sigma,forceCap,cutoff=False):
     #shift = cutoff**-1 * (12*A*cutoffMinus6**2 - 6*B*cutoffMinus6)
     
     force = r**-1 * (12*A*rMinus6**2 - 6*B*rMinus6) #- shift
-    force[force > forceCap] = forceCap
+
+    force = force.flatten() # numba doesn't support boolean slicing of multi-dimensional arrays, amongst many other things
+    force[force > forceCap] = forceCap # so I flatten the array, slice and set to zero
+    force = force.reshape(r.shape) # then shape as before.
     
     return force
-    
-r = np.linspace(1,4,100)
-force = lennardJones(r,1,1,2)
-
-#tools.plot(r,force)
 
 def hydrodynamic_velocity(viscosity,Force,ForceDirection,Seperation,SeperationDirection):
      

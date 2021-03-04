@@ -6,18 +6,22 @@ Created on Thu Feb 18 09:41:56 2021
 """
 
 import numpy as np
+
 import initialise
 import interactions
 import constraints
 import tools
-import animation
+
+from numba import jit
+from time import perf_counter
+#import animation
 
 '''
 KEY PARAMETERS
 --------------
 These parameters define the system. TO BE IMPLEMENTED: INPUTS? AND REALISTIC NUMBERS.
 '''
-axisN = 3 # the number of particles on each axis of a cube. Used to create a grid of particles at the start.
+axisN = 5 # the number of particles on each axis of a cube. Used to create a grid of particles at the start.
 N = axisN ** 3
 partAxisSep = 2E-5 # the axial separation of each particle on the cube from the next.
 
@@ -44,11 +48,14 @@ swimmingSpeed = 20.4E-6 # The hydrodynamics parameters, Speed should be approx 2
 hydrodynamicThrust = 0.57E-12 / nRod #Should be approx 0.57 pN
 viscosity = 1
 
+
 '''
 INITIALISATION
 --------------
-Creates the system by producing a grid of particles using the parameters above.
+Creates the system by producing a grid of particles using the parameters above. Also creates a file for storage
+of the output.
 '''
+initStart = perf_counter()
 pos = initialise.init(axisN,partAxisSep,nRod,bondLength)
 
 '''
@@ -58,6 +65,7 @@ Each timestep, the forces acting on each point in every particle are calculated 
 change the system. The "forces" are additive and are a Lennard-Jones potential between particles, a hydrodynamic
 approximation, particle self-propulsion and an infinite potential well. TO BE IMPLEMENTED: ALL OF IT.
 '''
+
 def acceleration(pos,r,sepDir): 
     
     LJForce = interactions.lennardJones(r,epsilon,sigma,forceCap) # calls Lennard-Jones function
@@ -66,9 +74,13 @@ def acceleration(pos,r,sepDir):
     a_y = invPointMass * sepDir[1] * LJForce
     a_z = invPointMass * sepDir[2] * LJForce
     
+    a_x = np.sum(a_x.reshape(N*nRod,-1),axis=1).reshape(N,nRod)
+    a_y = np.sum(a_y.reshape(N*nRod,-1),axis=1).reshape(N,nRod)
+    a_z = np.sum(a_z.reshape(N*nRod,-1),axis=1).reshape(N,nRod)
     
-    a_x, a_y, a_z = (np.einsum("ijkl->ij", a_x), np.einsum("ijkl->ij", a_y), np.einsum("ijkl->ij", a_z))
-    a = np.transpose(np.array([a_x,a_y,a_z]),[1,2,0])
+    #a_x, a_y, a_z = (np.einsum("ijkl->ij", a_x), np.einsum("ijkl->ij", a_y), np.einsum("ijkl->ij", a_z))
+    a = np.array([a_x,a_y,a_z])
+    a = np.transpose(a,[1,2,0])
     
     return a
 
@@ -98,6 +110,12 @@ a = acceleration(pos,r,sepDir)
 data = np.zeros((Nt+1,3,N,nRod)) # array describing the positions of all points over time
 data[0] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]]) # adds the initial positions to data
 
+initEnd = perf_counter()
+runtime = initEnd - initStart
+print(f"\nSystem initialised in {runtime:.3f} seconds.")
+
+mainStart = perf_counter()
+
 for i in range(Nt):
     
     vAccel += a * timestep / 2.0
@@ -121,5 +139,11 @@ for i in range(Nt):
     #if i % (plotFrames - 1) == 0:
     data[i+1] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]]) #adds the positions for the current timestep to data
 
+mainEnd = perf_counter()
+runtime = mainEnd - mainStart
+print(f"\nCalculations completed for {N * nRod} interaction points over {t} seconds with a timestep of {timestep} seconds.\nRun time: {runtime:.3f} seconds.")
+
+print("Saving to file...")
 np.save("output",data)
+print("Complete.")
 #animation.main(data.reshape(Nt+1,3,N*nRod)) # calls the animation function. It is janky.
