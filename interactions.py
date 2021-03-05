@@ -30,19 +30,17 @@ def lennardJones(r,epsilon,sigma,forceCap,cutoff=False):
     
     return force
 
-r = np.linspace(1E-7,5E-6,5000)
-force = lennardJones(r,4E-25,1E-6,2E-21)
+#r = np.linspace(1E-7,5E-6,5000)
+#force = lennardJones(r,4E-21,1E-6,5E-15)
 
 #tools.plot(r,force)
 
-#@jit
+@jit(forceobj=True)
 def hydrodynamic_velocity(viscosity,Force,ForceDirection,Seperation,SeperationDirection):
-     
     # Force magnitude of force dipole defined by swimming speed
     # Force dipole direction is seperate and simply the direction the rod is swimming in
-    DirectionalDependence = np.einsum("ij,ik...->k...",ForceDirection.T,SeperationDirection) # very time-heavy line
-    #DirectionalDependence = np.sum(np.dot(ForceDirection,SeperationDirection.reshape(SeperationDirection.shape[0],-1)),axis=0) # ew
-    #DirectionalDependence = DirectionalDependence.reshape(Seperation.shape)
+    DirectionalDependence = np.einsum("ij,ik...->k...",ForceDirection.T,SeperationDirection,optimize=True) # very time-heavy line
+    #DirectionalDependence = np.sum((SeperationDirection.T @ ForceDirection.T).T,axis=0)
     # Essentially angle between force dipole direction and separation direction from point on another rod
     
     hydro_velocity = ((Force/(np.pi * 8 * viscosity * (Seperation**2))) * ((3*(DirectionalDependence**2))-1)) * SeperationDirection #calculation
@@ -50,7 +48,5 @@ def hydrodynamic_velocity(viscosity,Force,ForceDirection,Seperation,SeperationDi
     shape = hydro_velocity.shape
     hydro_velocity = np.sum(hydro_velocity.reshape((shape[0]*shape[1]*shape[2],-1)),axis=1).reshape((3,-1))
     hydro_velocity = hydro_velocity.T.reshape(shape[1],shape[2],3)
-    
-    #hydro_velocity = np.transpose(np.einsum("ijklm->ijk",hydro_velocity),[1,2,0]) # einsum alternative; minimal time difference
     
     return hydro_velocity
