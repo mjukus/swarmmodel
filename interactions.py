@@ -35,12 +35,14 @@ def lennardJones(r,epsilon,sigma,forceCap,cutoff=False):
 
 #tools.plot(r,force)
 
-@jit(forceobj=True)
+#@jit
 def hydrodynamic_velocity(viscosity,Force,ForceDirection,Seperation,SeperationDirection):
     # Force magnitude of force dipole defined by swimming speed
     # Force dipole direction is seperate and simply the direction the rod is swimming in
-    DirectionalDependence = np.einsum("ij,ik...->k...",ForceDirection.T,SeperationDirection,optimize=True) # very time-heavy line
-    #DirectionalDependence = np.sum((SeperationDirection.T @ ForceDirection.T).T,axis=0)
+    shape = SeperationDirection.shape[1:]
+    DirectionalDependence = np.empty(shape)
+    for i in range(shape[0]):
+        DirectionalDependence[i] = np.einsum("i,i...->...",ForceDirection[i],SeperationDirection[:,i])
     # Essentially angle between force dipole direction and separation direction from point on another rod
     
     hydro_velocity = ((Force/(np.pi * 8 * viscosity * (Seperation**2))) * ((3*(DirectionalDependence**2))-1)) * SeperationDirection #calculation

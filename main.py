@@ -21,7 +21,7 @@ KEY PARAMETERS
 --------------
 These parameters define the system. TO BE IMPLEMENTED: INPUTS? AND REALISTIC NUMBERS.
 '''
-axisN = 3 # the number of particles on each axis of a cube. Used to create a grid of particles at the start.
+axisN = 10 # the number of particles on each axis of a cube. Used to create a grid of particles at the start.
 N = axisN ** 3
 partAxisSep = 3E-6 # the axial separation of each particle on the cube from the next.
 
@@ -34,8 +34,8 @@ partMass = 1E-15 #the mass of each whole rod-like particle, approx 1 picogram
 pointMass = partMass/nRod #the mass of each point in a particle
 invPointMass = 1 / pointMass #inverse mass of each point in a particle
 
-Nt = 200 # number of timesteps
-timestep = 1E-6 # size of timestep, in seconds
+Nt = 100 # number of timesteps
+timestep = 1E-5 # size of timestep, in seconds
 t = 0 # sets the time to zero at the start
 plotFrames = 10
 
@@ -47,7 +47,7 @@ forceCap = 5E-15
 
 hydrodynamics = True
 swimmingSpeed = 20.4E-6 # The hydrodynamics parameters, Speed should be approx 20.4 µm/s
-hydrodynamicThrust = 0.57E-15 / nRod #Should be approx 0.57 pN
+hydrodynamicThrust = 0.57E-12 / nRod #Should be approx 0.57 pN
 viscosity = 1
 
 

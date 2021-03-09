@@ -76,7 +76,6 @@ def separation(pos,N,nRod):
     r = r[r != 0].reshape(N,nRod,nRod,N-1) # remove all zeros to avoid nan in force
     
     sepDir = np.array([dx * r**-1, dy * r**-1, dz * r**-1]) # array of separation directions
-    
     return r, sepDir
 
 def plot(x,y,z=0):
