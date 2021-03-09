@@ -6,7 +6,7 @@ Created on Fri Dec  4 12:14:27 2020
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import tools
     
 def angleCon(pos,bondStiffness):

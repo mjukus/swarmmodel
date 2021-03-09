@@ -6,10 +6,14 @@ Created on Thu Feb 18 09:41:56 2021
 """
 
 import numpy as np
+
 import initialise
 import interactions
 import constraints
 import tools
+
+from numba import jit
+from time import perf_counter
 import animation
 
 '''
@@ -19,7 +23,7 @@ These parameters define the system. TO BE IMPLEMENTED: INPUTS? AND REALISTIC NUM
 '''
 axisN = 3 # the number of particles on each axis of a cube. Used to create a grid of particles at the start.
 N = axisN ** 3
-partAxisSep = 2E-5 # the axial separation of each particle on the cube from the next.
+partAxisSep = 3E-6 # the axial separation of each particle on the cube from the next.
 
 rodLength = 2E-6 # length of each rod-like particle, approx 2µm. Diameter approx 1µm, Vol approx 1µm**3
 nRod = 4 # number of interaction points in rod. Must be greater than 1
@@ -31,24 +35,29 @@ pointMass = partMass/nRod #the mass of each point in a particle
 invPointMass = 1 / pointMass #inverse mass of each point in a particle
 
 Nt = 200 # number of timesteps
-timestep = 3E-6 # size of timestep, in seconds
+timestep = 1E-6 # size of timestep, in seconds
 t = 0 # sets the time to zero at the start
 plotFrames = 10
 
+lennardJonesFlag = True
 epsilon = 4E-21 # the Lennard-Jones parameters
 sigma = 1E-6
 cutoff = 2 * sigma # truncation point above which potential is assumed zero
-forceCap = 1E-26
+forceCap = 5E-15
 
+hydrodynamics = True
 swimmingSpeed = 20.4E-6 # The hydrodynamics parameters, Speed should be approx 20.4 µm/s
-hydrodynamicThrust = 0.57E-12 / nRod #Should be approx 0.57 pN
+hydrodynamicThrust = 0.57E-15 / nRod #Should be approx 0.57 pN
 viscosity = 1
+
 
 '''
 INITIALISATION
 --------------
-Creates the system by producing a grid of particles using the parameters above.
+Creates the system by producing a grid of particles using the parameters above. Also creates a file for storage
+of the output.
 '''
+initStart = perf_counter()
 pos = initialise.init(axisN,partAxisSep,nRod,bondLength)
 
 '''
@@ -58,19 +67,29 @@ Each timestep, the forces acting on each point in every particle are calculated 
 change the system. The "forces" are additive and are a Lennard-Jones potential between particles, a hydrodynamic
 approximation, particle self-propulsion and an infinite potential well. TO BE IMPLEMENTED: ALL OF IT.
 '''
+
 def acceleration(pos,r,sepDir): 
     
-    LJForce = interactions.lennardJones(r,epsilon,sigma,forceCap) # calls Lennard-Jones function
+    if lennardJonesFlag == True:
+        LJForce = interactions.lennardJones(r,epsilon,sigma,forceCap) # calls Lennard-Jones function
     
-    a_x = invPointMass * sepDir[0] * LJForce
-    a_y = invPointMass * sepDir[1] * LJForce
-    a_z = invPointMass * sepDir[2] * LJForce
+        a_x = invPointMass * sepDir[0] * - LJForce
+        a_y = invPointMass * sepDir[1] * - LJForce
+        a_z = invPointMass * sepDir[2] * - LJForce
     
+        a_x = np.sum(a_x.reshape(N*nRod,-1),axis=1).reshape(N,nRod)
+        a_y = np.sum(a_y.reshape(N*nRod,-1),axis=1).reshape(N,nRod)
+        a_z = np.sum(a_z.reshape(N*nRod,-1),axis=1).reshape(N,nRod)
     
-    a_x, a_y, a_z = (np.einsum("ijkl->ij", a_x), np.einsum("ijkl->ij", a_y), np.einsum("ijkl->ij", a_z))
-    a = np.transpose(np.array([a_x,a_y,a_z]),[1,2,0])
+        a = np.array([a_x,a_y,a_z])
+    
+    else:
+        a = np.zeros((3,N,nRod))
+        
+    a = np.transpose(a,[1,2,0])
     
     return a
+
 
 def velocity(pos,r,sepDir):
     
@@ -85,8 +104,11 @@ def velocity(pos,r,sepDir):
     
     swimmingVelocity = swimmingSpeed * np.repeat([bondDir],nRod,axis=1).reshape(N,nRod,3)
     
-    hydroVelocity = interactions.hydrodynamic_velocity(viscosity,hydrodynamicThrust,bondDir,r,sepDir)
-    velocity = swimmingVelocity + hydroVelocity
+    if hydrodynamics == True:
+        hydroVelocity = interactions.hydrodynamic_velocity(viscosity,hydrodynamicThrust,bondDir,r,sepDir)
+        velocity = swimmingVelocity + hydroVelocity
+    else:
+        velocity = swimmingVelocity
     
     return velocity
 
@@ -98,8 +120,15 @@ a = acceleration(pos,r,sepDir)
 data = np.zeros((Nt+1,3,N,nRod)) # array describing the positions of all points over time
 data[0] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]]) # adds the initial positions to data
 
+initEnd = perf_counter()
+runtime = initEnd - initStart
+print(f"\nSystem initialised in {runtime:.3f} seconds.\n")
+
+mainStart = perf_counter()
+
 for i in range(Nt):
-    
+        
+    print(f"Calculating timestep: {i+1} of {Nt}...", end="\r")
     vAccel += a * timestep / 2.0
     pos += (vAccel + baseVelocity) * timestep
     pos = constraints.bondCon(pos,bondLength,nRod) # sharply constrains the bonds to bondLength
@@ -108,7 +137,7 @@ for i in range(Nt):
     a = acceleration(pos,r,sepDir)
     vAccel += a * timestep / 2.0
     t += timestep
-    
+
 
     '''
     CONSTRAINTS
@@ -118,8 +147,13 @@ for i in range(Nt):
     particles. TO BE IMPLEMENTED: ANGLE CONSTRAINTS.
     '''
     
-    #if i % (plotFrames - 1) == 0:
     data[i+1] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]]) #adds the positions for the current timestep to data
 
+mainEnd = perf_counter()
+runtime = mainEnd - mainStart
+print(f"\n\nCalculations completed for {N} particles ({N * nRod} interaction points) over {t:.1E} seconds with a timestep of {timestep:.1E} seconds.\nRun time: {runtime:.3f} seconds.")
+
+print("\nSaving to file...")
 np.save("output",data)
+print("Complete.")
 #animation.main(data.reshape(Nt+1,3,N*nRod)) # calls the animation function. It is janky.
