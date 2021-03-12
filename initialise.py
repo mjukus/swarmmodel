@@ -15,8 +15,7 @@ def init(axisN,partAxisSep,nRod,bondLength,centre=0):
     This function generates starting positions and orientations of N rod-like particles.
     It begins by producing a 3D grid of N evenly-spaced particles, before generating a random
     orientation vector for each and attaching further points at a set bond length to these according
-    to the orientation vectors to produce rods. Finally a plot is produced of the initial state of the
-    system.
+    to the orientation vectors to produce rods.
 
     Parameters
     ----------
