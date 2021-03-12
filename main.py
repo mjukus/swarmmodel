@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Fri Mar  5 04:12:57 2021
-
 @author: mawga
 """
 
@@ -11,7 +10,6 @@ import initialise # importing bespoke functions from local directory
 import interactions
 import constraints
 import tools
-import quiver
 
 from numba import jit # importing tools for improving runtime and controlling the way the program runs
 from time import perf_counter
@@ -23,7 +21,6 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
          viscosity: float=1E-3):
     '''
     Prepares a system of N particles before calculating accelerations and velocities and iterating over Nt timesteps. The positions are stored in an array and are saved to file after the final timestep. Throughout "particle" refers to a rod made up of nRod "interaction points".
-
     Parameters
     ----------
     axisN : int
@@ -135,7 +132,6 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
     
     dirData = np.zeros((Nt+1,3,N)) # array describing the positions of all points over time
     bondDir = np.moveaxis(bondDir,1,0)
-    print (bondDir[0].shape)
     dirData[0] = np.array([bondDir[0],bondDir[1],bondDir[2]])
     
     initEnd = perf_counter()
@@ -177,3 +173,5 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
     np.save("positions",data)
     np.save("directions",dirData)
     print("Complete.")
+
+#main(3,4,3E-6,200,1E-5)

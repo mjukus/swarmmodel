@@ -55,4 +55,4 @@ def init(axisN,partAxisSep,nRod,bondLength,centre=0):
     #tools.plot(np.vstack(pos)[:,0:1],np.vstack(pos)[:,1:2],np.vstack(pos)[:,2:3])
     # plots the starting state of the system in 3 dimensions
     
-    return pos
+    return pos, bondDir

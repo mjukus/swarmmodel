@@ -68,6 +68,8 @@ if sys.argv[-1] == '?':
     help(main)
     print("\nAdd optional arguments using the syntax <optionalArgument=value> after required arguments.")
     args = sys.argv[0:-1]
+else:
+    args = sys.argv
 if len(args) < 5:
     raise TypeError(f"main() takes a minimum of 5 arguments ({len(args) - 1} given).\n\nUsage: python {args[0]} <axisN> <nRod> <partAxisSep> <Nt> <timestep>.\n{help_text}")
 elif len(args) > 15:

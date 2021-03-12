@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Fri Mar  5 04:15:23 2021
-
 @author: mawga
 """
 from mpl_toolkits.mplot3d import axes3d
@@ -110,8 +109,6 @@ def quiver (data,dirData,N,t):
     dirData2 = np.sqrt(dirData**2)
     dirData2 = np.moveaxis(dirData,2,1)
     
-    
-    
     colour = np.zeros([N,3])
     for i in range (N):
         colour[i] = np.array([dirData2[0,i,0],dirData2[0,i,1],dirData2[0,i,2]])
@@ -124,8 +121,5 @@ def quiver (data,dirData,N,t):
     print (colour)
     colour = np.abs(colour) 
     
-   
-    
     ax.quiver(data2[t,0],data2[t,1],data2[t,2],dirData[t,0],dirData[t,1],dirData[t,2], colors=colour, length=5E-7)
     plt.show()
-    

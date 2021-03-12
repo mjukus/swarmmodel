@@ -52,4 +52,4 @@ def bondCon(pos,bondLength,nRod):
     # calls tools.bondVectorGen, which generates an array of position vectors for all the points in all the
     # particles
     
-    return pos
+    return pos, bondDir
