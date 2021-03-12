@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Feb 18 09:41:56 2021
+Created on Fri Mar  5 04:12:57 2021
 
-@author: thesq
+@author: mawga
 """
 
 import numpy as np
@@ -11,6 +11,7 @@ import initialise
 import interactions
 import constraints
 import tools
+import quiver
 
 from numba import jit
 from time import perf_counter
@@ -21,9 +22,9 @@ KEY PARAMETERS
 --------------
 These parameters define the system. TO BE IMPLEMENTED: INPUTS? AND REALISTIC NUMBERS.
 '''
-axisN = 10 # the number of particles on each axis of a cube. Used to create a grid of particles at the start.
+axisN = 2 # the number of particles on each axis of a cube. Used to create a grid of particles at the start.
 N = axisN ** 3
-partAxisSep = 3E-6 # the axial separation of each particle on the cube from the next.
+partAxisSep = 4E-6 # the axial separation of each particle on the cube from the next.
 
 rodLength = 2E-6 # length of each rod-like particle, approx 2µm. Diameter approx 1µm, Vol approx 1µm**3
 nRod = 4 # number of interaction points in rod. Must be greater than 1
@@ -35,14 +36,14 @@ pointMass = partMass/nRod #the mass of each point in a particle
 invPointMass = 1 / pointMass #inverse mass of each point in a particle
 
 Nt = 100 # number of timesteps
-timestep = 1E-5 # size of timestep, in seconds
+timestep = 3E-6 # size of timestep, in seconds
 t = 0 # sets the time to zero at the start
 plotFrames = 10
 
 lennardJonesFlag = True
-epsilon = 4E-21 # the Lennard-Jones parameters
+epsilon = 4E-24 # the Lennard-Jones parameters
 sigma = 1E-6
-cutoff = 2 * sigma # truncation point above which potential is assumed zero
+#cutoff = 2 * sigma # truncation point above which potential is assumed zero
 forceCap = 5E-15
 
 hydrodynamics = True
@@ -58,7 +59,7 @@ Creates the system by producing a grid of particles using the parameters above. 
 of the output.
 '''
 initStart = perf_counter()
-pos = initialise.init(axisN,partAxisSep,nRod,bondLength)
+pos,bondDir = initialise.init(axisN,partAxisSep,nRod,bondLength)
 
 '''
 INTERACTIONS
@@ -117,13 +118,20 @@ baseVelocity = velocity(pos,r,sepDir)
 vAccel = np.zeros((N,nRod,3))
 a = acceleration(pos,r,sepDir)
 
+
 data = np.zeros((Nt+1,3,N,nRod)) # array describing the positions of all points over time
 data[0] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]]) # adds the initial positions to data
+
+
+dirData = np.zeros((Nt+1,3,N)) # array describing the positions of all points over time
+bondDir = np.moveaxis(bondDir,1,0)
+print (bondDir[0].shape)
+dirData[0] = np.array([bondDir[0],bondDir[1],bondDir[2]])
 
 initEnd = perf_counter()
 runtime = initEnd - initStart
 print(f"\nSystem initialised in {runtime:.3f} seconds.\n")
-
+print
 mainStart = perf_counter()
 
 for i in range(Nt):
@@ -131,7 +139,7 @@ for i in range(Nt):
     print(f"Calculating timestep: {i+1} of {Nt}...", end="\r")
     vAccel += a * timestep / 2.0
     pos += (vAccel + baseVelocity) * timestep
-    pos = constraints.bondCon(pos,bondLength,nRod) # sharply constrains the bonds to bondLength
+    pos,bondDir = constraints.bondCon(pos,bondLength,nRod) # sharply constrains the bonds to bondLength
     r,sepDir = tools.separation(pos,N,nRod)
     baseVelocity = velocity(pos,r,sepDir)
     a = acceleration(pos,r,sepDir)
@@ -148,10 +156,17 @@ for i in range(Nt):
     '''
     
     data[i+1] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]]) #adds the positions for the current timestep to data
+    bondDir = np.moveaxis(bondDir,1,0)
+    dirData[i+1] = np.array([bondDir[0],bondDir[1],bondDir[2]])
 
 mainEnd = perf_counter()
 runtime = mainEnd - mainStart
 print(f"\n\nCalculations completed for {N} particles ({N * nRod} interaction points) over {t:.1E} seconds with a timestep of {timestep:.1E} seconds.\nRun time: {runtime:.3f} seconds.")
+print (data.shape)
+#plot = tools.plot(data[0,0],data[0,1],data[0,2])
+#plot = tools.plot(data[Nt,0],data[Nt,1],data[Nt,2])
+tools.quiver(data,dirData,N,0)
+tools.quiver(data,dirData,N,Nt)
 
 print("\nSaving to file...")
 np.save("output",data)
