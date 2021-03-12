@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Feb 19 00:48:17 2021
+Created on Fri Mar  5 04:15:23 2021
 
-@author: thesq
+@author: mawga
 """
-
+from mpl_toolkits.mplot3d import axes3d
 import numpy as np
 import matplotlib.pyplot as plt
 from numba import jit
@@ -14,7 +14,6 @@ def bondVectorGen(grid,bondDir,bondLength,nRod):
     '''
     Generates an N x nRod x 3 array containing the positions of all points in all particles from a grid of
     particle starting positions, the bond directions, the bond length, and the number of points in the rod.
-
     Parameters
     ----------
     grid : N x 3 array
@@ -25,12 +24,10 @@ def bondVectorGen(grid,bondDir,bondLength,nRod):
         The length of each bond in a particle.
     nRod : integer
         The number of points in a particle.
-
     Returns
     -------
     pos : N x nRod x 3 array
         DESCRIPTION.
-
     '''
     N = len(bondDir) # the total number of rod-like particles is taken from the length of bondDir
     bondVector = bondLength * bondDir # bond vectors are calculated
@@ -81,18 +78,15 @@ def separation(pos,N,nRod):
 def plot(x,y,z=0):
     '''
     Simple 3D scatter plotting function. Hope to replace/improve with an animated thing.
-
     Parameters
     ----------
     x : array
     y : array
     z : array, optional
         The default is 0.
-
     Returns
     -------
     Produces a 3D scatter plot of x, y and z.
-
     '''
     plotFig = plt.figure()
     plotAx = plotFig.add_subplot(111,projection="3d")
@@ -104,3 +98,34 @@ def plot(x,y,z=0):
     plot = plotAx.scatter(x,y,z)
     
     return plotFig, plotAx, plot
+
+def quiver (data,dirData,N,t):
+    ''' quiver plot innit '''
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    data2 = np.moveaxis(data,3,2)
+    print(data.shape)
+    print(dirData.shape)
+   
+    dirData2 = np.sqrt(dirData**2)
+    dirData2 = np.moveaxis(dirData,2,1)
+    
+    
+    
+    colour = np.zeros([N,3])
+    for i in range (N):
+        colour[i] = np.array([dirData2[0,i,0],dirData2[0,i,1],dirData2[0,i,2]])
+       
+        
+        #colour[N+2*i] = np.array([dirData2[0,i,0],dirData2[0,i,1],dirData2[0,i,2]])  not working
+        #colour[N+1+(2*i)] = np.array([dirData2[0,i,0],dirData2[0,i,1],dirData2[0,i,2]])  not working
+    print (colour)    
+    colour[colour < 0 ] = 0.5 * colour[colour<0]
+    print (colour)
+    colour = np.abs(colour) 
+    
+   
+    
+    ax.quiver(data2[t,0],data2[t,1],data2[t,2],dirData[t,0],dirData[t,1],dirData[t,2], colors=colour, length=5E-7)
+    plt.show()
+    

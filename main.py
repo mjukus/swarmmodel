@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Feb 18 09:41:56 2021
+Created on Fri Mar  5 04:12:57 2021
 
-@author: thesq
+@author: mawga
 """
 
 import numpy as np # importing numpy
@@ -11,6 +11,7 @@ import initialise # importing bespoke functions from local directory
 import interactions
 import constraints
 import tools
+import quiver
 
 from numba import jit # importing tools for improving runtime and controlling the way the program runs
 from time import perf_counter
@@ -71,7 +72,7 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
     Creates the system by producing a grid of particles using the parameters above, and calculates initial velocities. Also creates a file for storage of the output.
     '''
     initStart = perf_counter() # start timing the initialisation of the system
-    pos = initialise.init(axisN,partAxisSep,nRod,bondLength)
+    pos, bondDir = initialise.init(axisN,partAxisSep,nRod,bondLength)
     
     '''
     INTERACTIONS
@@ -132,6 +133,11 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
     data = np.zeros((Nt+1,3,N,nRod)) # array describing the positions of all points over time
     data[0] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]]) # adds the initial positions to data
     
+    dirData = np.zeros((Nt+1,3,N)) # array describing the positions of all points over time
+    bondDir = np.moveaxis(bondDir,1,0)
+    print (bondDir[0].shape)
+    dirData[0] = np.array([bondDir[0],bondDir[1],bondDir[2]])
+    
     initEnd = perf_counter()
     runtime = initEnd - initStart
     print(f"\nSystem initialised in {runtime:.3f} seconds.\n")
@@ -143,7 +149,7 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
         print(f"Calculating timestep: {i+1} of {Nt}...", end="\r")
         vAccel += a * timestep / 2.0
         pos += (vAccel + baseVelocity) * timestep
-        pos = constraints.bondCon(pos,bondLength,nRod) # sharply constrains the bonds to bondLength
+        pos, bondDir = constraints.bondCon(pos,bondLength,nRod) # sharply constrains the bonds to bondLength
         r,sepDir = tools.separation(pos,N,nRod)
         baseVelocity = velocity(pos,r,sepDir)
         a = acceleration(pos,r,sepDir)
@@ -160,11 +166,14 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
         '''
         
         data[i+1] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]]) #adds the positions for the current timestep to data
+        bondDir = np.moveaxis(bondDir,1,0)
+        dirData[i+1] = np.array([bondDir[0],bondDir[1],bondDir[2]])
     
     mainEnd = perf_counter()
     runtime = mainEnd - mainStart
     print(f"\n\nCalculations completed for {N} particles ({N * nRod} interaction points) over {t:.1E} seconds with a timestep of {timestep:.1E} seconds ({Nt} timesteps).\nRun time: {runtime:.3f} seconds.")
     
     print("\nSaving to file...")
-    np.save("output",data)
+    np.save("positions",data)
+    np.save("directions",dirData)
     print("Complete.")
