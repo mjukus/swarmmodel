@@ -2,6 +2,7 @@
 """
 Created on Fri Mar  5 04:12:57 2021
 @author: mawga
+I have a habit of overcommenting. Forgive me. Thanks. Also, PEP 8...not followed - Jack
 """
 
 import numpy as np # importing numpy
@@ -11,8 +12,9 @@ import interactions
 import constraints
 import tools
 
-from numba import jit # importing tools for improving runtime and controlling the way the program runs
+from numba import jit # importing tools for improving runtime and timing
 from time import perf_counter
+
 
 def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
          rodLength: float=2E-6, partMass: float=1E-15, lennardJonesFlag: bool=True,

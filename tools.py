@@ -98,13 +98,13 @@ def plot(x,y,z=0):
     
     return plotFig, plotAx, plot
 
-def quiver (data,dirData,N,t):
+def quiver (data,dirData,timestep=-1):
     ''' quiver plot innit '''
     fig = plt.figure()
     ax = fig.gca(projection='3d')
+    
+    N = data.shape[2]
     data2 = np.moveaxis(data,3,2)
-    print(data.shape)
-    print(dirData.shape)
    
     dirData2 = np.sqrt(dirData**2)
     dirData2 = np.moveaxis(dirData,2,1)
@@ -112,14 +112,10 @@ def quiver (data,dirData,N,t):
     colour = np.zeros([N,3])
     for i in range (N):
         colour[i] = np.array([dirData2[0,i,0],dirData2[0,i,1],dirData2[0,i,2]])
-       
-        
         #colour[N+2*i] = np.array([dirData2[0,i,0],dirData2[0,i,1],dirData2[0,i,2]])  not working
-        #colour[N+1+(2*i)] = np.array([dirData2[0,i,0],dirData2[0,i,1],dirData2[0,i,2]])  not working
-    print (colour)    
+        #colour[N+1+(2*i)] = np.array([dirData2[0,i,0],dirData2[0,i,1],dirData2[0,i,2]])  not working    
     colour[colour < 0 ] = 0.5 * colour[colour<0]
-    print (colour)
     colour = np.abs(colour) 
     
-    ax.quiver(data2[t,0],data2[t,1],data2[t,2],dirData[t,0],dirData[t,1],dirData[t,2], colors=colour, length=5E-7)
+    ax.quiver(data2[timestep,0],data2[timestep,1],data2[timestep,2],dirData[timestep,0],dirData[timestep,1],dirData[timestep,2], colors=colour, length=5E-7)
     plt.show()
