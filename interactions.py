@@ -51,7 +51,7 @@ def lennardJones(r,epsilon: float,sigma: float,forceCap: float):
     return force
 
 #r = np.linspace(1E-7,5E-6,5000)
-#force = lennardJones(r,4E-21,1E-6,5E-15)
+#force = lennardJones(r,4E-21,1E-6,5E-15) # lines for plotting Lennard-Jones force equation
 #tools.plot(r,force)
 
 #@jit # seems to slow the function down

@@ -76,7 +76,7 @@ def separation(pos,N,nRod):
 
 def plot(x,y,z=0):
     '''
-    Simple 3D scatter plotting function. Hope to replace/improve with an animated thing.
+    Simple 3D scatter plotting function.
     Parameters
     ----------
     x : array

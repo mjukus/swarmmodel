@@ -36,7 +36,7 @@ def init(axisN,partAxisSep,nRod,bondLength,centre=0):
         The positions of all the points in the particles in the system.
 
     '''
-    N = axisN ** 3 #the number of rod-like particles in the system.
+    N = axisN ** 3 #the number of particles in the system.
     
     gridWidth = (axisN - 1) * partAxisSep # width of the cube
     axisPos = np.linspace(centre-gridWidth/2,centre+gridWidth/2,axisN) # an array of particle positions on each axis

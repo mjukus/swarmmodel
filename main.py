@@ -66,37 +66,48 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
     #cutoff = 2 * sigma # truncation point above which Lennard-Jones potential is assumed zero; unimplemented and likely unnecessary
     
     '''
-    INITIALISATION
-    --------------
-    Creates the system by producing a grid of particles using the parameters above, and calculates initial velocities. Also creates a file for storage of the output.
-    '''
-    initStart = perf_counter() # start timing the initialisation of the system
-    pos, bondDir = initialise.init(axisN,partAxisSep,nRod,bondLength)
-    
-    '''
     INTERACTIONS
-    ------
-    Each timestep, the forces acting on each point in every particle are calculated and act on the points to
-    change the system. The "forces" are additive and are a Lennard-Jones potential between particles, a hydrodynamic approximation, particle self-propulsion and an infinite potential well. TO BE IMPLEMENTED: INFINITE POTENTIAL WELL
+    ------------
+    Interactions are handled in the following functions. Acceleration is calculated from a Lennard-Jones
+    potential and an potential well. Velocity is calculated from a base velocity (in the function velocity())
+    made up of a self-propulsive term and a hydrodynamic approximation and the velocity from the acceleration.
+    TO BE IMPLEMENTED: potential well
     '''
-    
     def acceleration(pos,r,sepDir): 
+        '''
+        Calculates the acceleration on each point in the system from a Lennard-Jones potential and a potential well, using the positions of the points and separations between them.
+
+        Parameters
+        ----------
+        pos : N x nRod x 3 array
+            The positions of all the points in the system.
+        r : N x nRod x nRod x (N - 1) array
+            The distances between all the points and other points not in the same particle.
+        sepDir : N x nRod x nRod x (N - 1) array
+            The directions of the separations between all points and other points not in the same particle.
+
+        Returns
+        -------
+        a : N x nRod x 3 array
+            The accelerations of all the points in the system.
+        '''
         
         if lennardJonesFlag == True:
-            LJForce = interactions.lennardJones(r,epsilon,sigma,forceCap) # calls Lennard-Jones function
+            # calls the Lennard-Jones calculation if turned on
+            LJForce = interactions.lennardJones(r,epsilon,sigma,forceCap)
             
-            a_x = invPointMass * sepDir[0] * - LJForce
+            a_x = invPointMass * sepDir[0] * - LJForce # calculates acceleration on each axis from each force
             a_y = invPointMass * sepDir[1] * - LJForce
             a_z = invPointMass * sepDir[2] * - LJForce
             
-            a_x = np.sum(a_x.reshape(N*nRod,-1),axis=1).reshape(N,nRod)
+            a_x = np.sum(a_x.reshape(N*nRod,-1),axis=1).reshape(N,nRod) # sums together forces on the same point
             a_y = np.sum(a_y.reshape(N*nRod,-1),axis=1).reshape(N,nRod)
             a_z = np.sum(a_z.reshape(N*nRod,-1),axis=1).reshape(N,nRod)
             
             a = np.array([a_x,a_y,a_z])
             
         else:
-            a = np.zeros((3,N,nRod))
+            a = np.zeros((3,N,nRod)) # no acceleration
             
         a = np.transpose(a,[1,2,0])
         
@@ -104,6 +115,23 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
     
     
     def velocity(pos,r,sepDir):
+        '''
+        Calculates base velocity on each point in the system from self-propulsion and a hydrodynamic approximation, using the positions of the points and separations between them.
+
+        Parameters
+        ----------
+        pos : N x nRod x 3 array
+            The positions of all points in the system.
+        r : N x nRod x nRod x (N - 1) array
+            The distances between all the points and other points not in the same particle.
+        sepDir : N x nRod x nRod x (N - 1) array
+            The directions of the separations between all points and other points not in the same particle.
+
+        Returns
+        -------
+        velocity : N x nRod x 3 array
+            The velocities of all the points in the system.
+        '''
         
         particleTails = pos[:,0] # the positions of the two ends of the particles - the heads and tails
         particleHeads = pos[:,-1]
@@ -112,68 +140,72 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
         centreMag = np.linalg.norm(centre, axis=1)
         # the magnitude of the vectors describing the middle of the particles
         
-        bondDir = (centreMag[:,np.newaxis]**-1 * centre)
+        bondDir = (centreMag[:,np.newaxis]**-1 * centre) # bond directions as unit vectors
         
-        swimmingVelocity = swimmingSpeed * np.repeat([bondDir],nRod,axis=1).reshape(N,nRod,3)
+        swimmingVelocity = swimmingSpeed * np.repeat([bondDir],nRod,axis=1).reshape(N,nRod,3) # particles swim straight ahead at swiming speed
         
         if hydrodynamics == True:
+            # calls the hydrodynamics function if turned on
             hydroVelocity = interactions.hydrodynamic_velocity(viscosity,hydrodynamicThrust,bondDir,r,sepDir)
             velocity = swimmingVelocity + hydroVelocity
+        
         else:
             velocity = swimmingVelocity
             
         return velocity
     
-    r, sepDir = tools.separation(pos,N,nRod) # calculates separations between all points and directions of these separations
-    baseVelocity = velocity(pos,r,sepDir)
-    vAccel = np.zeros((N,nRod,3))
-    a = acceleration(pos,r,sepDir)
+    '''
+    INITIALISATION
+    --------------
+    Creates the system by producing a grid of particles using the parameters above, and calculates initial
+    velocities. Also creates a file for storage of the output.
+    '''
+    initStart = perf_counter() # start timing the initialisation of the system
+    pos, bondDir = initialise.init(axisN,partAxisSep,nRod,bondLength)
+    
+    
+    
+    r, sepDir = tools.separation(pos,N,nRod) # calculates initial separations between all points and directions of these separations
+    baseVelocity = velocity(pos,r,sepDir) # initial base velocity
+    vAccel = np.zeros((N,nRod,3)) # array describing velocity from acceleration
+    a = acceleration(pos,r,sepDir) # initial acceleration
     
     data = np.zeros((Nt+1,3,N,nRod)) # array describing the positions of all points over time
     data[0] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]]) # adds the initial positions to data
     
-    dirData = np.zeros((Nt+1,3,N)) # array describing the positions of all points over time
+    dirData = np.zeros((Nt+1,3,N)) # array describing the directions of all points over time
     bondDir = np.moveaxis(bondDir,1,0)
-    dirData[0] = np.array([bondDir[0],bondDir[1],bondDir[2]])
+    dirData[0] = np.array([bondDir[0],bondDir[1],bondDir[2]]) # populated with directions
     
-    initEnd = perf_counter()
-    runtime = initEnd - initStart
-    print(f"\nSystem initialised in {runtime:.3f} seconds.\n")
+    initEnd = perf_counter() # end timing the initialisation of the system
+    initRuntime = initEnd - initStart
+    print(f"\nSystem initialised in {initRuntime:.3f} seconds.\n")
     
-    mainStart = perf_counter()
+    mainStart = perf_counter() # start timing the timestep calculations
     
     for i in range(Nt):
-                
+        # over all timesteps, uses leapfrog method to calculate motion of particles
         print(f"Calculating timestep: {i+1} of {Nt}...", end="\r")
-        vAccel += a * timestep / 2.0
-        pos += (vAccel + baseVelocity) * timestep
+        vAccel += a * timestep / 2.0 # calculates velocity from acceleration
+        pos += (vAccel + baseVelocity) * timestep # calculates position from total velocity for the current timestep
         pos, bondDir = constraints.bondCon(pos,bondLength,nRod) # sharply constrains the bonds to bondLength
-        r,sepDir = tools.separation(pos,N,nRod)
-        baseVelocity = velocity(pos,r,sepDir)
-        a = acceleration(pos,r,sepDir)
-        vAccel += a * timestep / 2.0
-        t += timestep
-        
-        
-        '''
-        CONSTRAINTS
-        -----------
-        After the forces have acted on all the particles and points for each timestep, the constraint functions
-        constrain first the angles of the particles to keep the rods straight, followed by the lengths of the
-        particles. TO BE IMPLEMENTED: ANGLE CONSTRAINTS.
-        '''
+        r,sepDir = tools.separation(pos,N,nRod) # new separations
+        baseVelocity = velocity(pos,r,sepDir) # new base velocity
+        a = acceleration(pos,r,sepDir) # new acceleration
+        vAccel += a * timestep / 2 # new velocity from acceleration
+        t += timestep # increases timestep
         
         data[i+1] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]]) #adds the positions for the current timestep to data
         bondDir = np.moveaxis(bondDir,1,0)
-        dirData[i+1] = np.array([bondDir[0],bondDir[1],bondDir[2]])
+        dirData[i+1] = np.array([bondDir[0],bondDir[1],bondDir[2]]) # adds the directions of the particles for the current timestep to dirData
     
-    mainEnd = perf_counter()
+    mainEnd = perf_counter() # end timing the timestep calculations
     runtime = mainEnd - mainStart
-    print(f"\n\nCalculations completed for {N} particles ({N * nRod} interaction points) over {t:.1E} seconds with a timestep of {timestep:.1E} seconds ({Nt} timesteps).\nRun time: {runtime:.3f} seconds.")
+    print(f"\n\nCalculations completed for {N} particles ({N * nRod} interaction points) over {t:.1E} seconds with a timestep of {timestep:.1E} seconds ({Nt} timesteps).\nCalculation time: {runtime:.3f} seconds.\n\nTotal runtime: {(initRuntime + runtime):.3f} seconds.") # output key parameters and timing
     
     print("\nSaving to file...")
-    np.save("positions",data)
+    np.save("positions",data) # saves positions and directions as .npy files, for use in analysis.py
     np.save("directions",dirData)
     print("Complete.")
 
-#main(3,4,3E-6,200,1E-5)
+#main(3,4,3E-6,200,1E-5) # uncomment for running in spyder

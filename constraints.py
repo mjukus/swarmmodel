@@ -10,6 +10,7 @@ import numpy as np
 import tools
     
 def angleCon(pos,bondStiffness):
+    # UNIMPLEMENTED. Not necessary, hopefully.
     #problem is, will have to do this for each set of three points in the rod
     particleTails = pos[:,0]
     particleHeads = pos[:,-1]
