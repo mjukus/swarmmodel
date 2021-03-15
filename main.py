@@ -193,9 +193,10 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
         print(f"Calculating timestep: {i+1} of {Nt}...", end="\r")
         vAccel += a * timestep / 2.0 # calculates velocity from acceleration
         pos += (vAccel + baseVelocity) * timestep # calculates position from total velocity for the current timestep
-        pos, bondDir = constraints.bondCon(pos,bondLength,nRod) # sharply constrains the bonds to bondLength
         if (i + 1) % tumbleFreq == 0:
-            pos = tools.tumble(pos,bondLength)
+            pos = tools.tumble(pos,bondLength) # the particles undergo tumbles, synchronised as they would...
+        else:
+            pos, bondDir = constraints.bondCon(pos,bondLength,nRod) # sharply constrains the bonds to bondLength
         r,sepDir = tools.separation(pos,N,nRod) # new separations
         baseVelocity = velocity(pos,r,sepDir) # new base velocity
         a = acceleration(pos,r,sepDir) # new acceleration
