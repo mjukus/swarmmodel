@@ -17,13 +17,13 @@ from time import perf_counter
 
 
 def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
-         rodLength: float=2E-6, partMass: float=1E-15, lennardJonesFlag: bool=True,
-         epsilon: float=4E-21, sigma: float=1E-6, forceCap: float=5E-15,
-         hydrodynamics: bool=True, swimmingSpeed: float=20.4E-6, hydrodynamicThrust: float=0.57E-12,
-         viscosity: float=1E-3):
+         rodLength: float=2E-6, partMass: float=1E-15, swimmingSpeed: float=20.4E-6, tumbleFreq: int=100,
+         lennardJonesFlag: bool=True, epsilon: float=4E-21, sigma: float=1E-6, forceCap: float=5E-15,
+         hydrodynamics: bool=True, hydrodynamicThrust: float=0.57E-12, viscosity: float=1E-3):
     '''
     Prepares a system of N particles before calculating accelerations and velocities and iterating over Nt timesteps. The positions are stored in an array and are saved to file after the final timestep. Throughout "particle" refers to a rod made up of nRod "interaction points".
-    Parameters
+     
+    System Parameters
     ----------
     axisN : int
         The number of particles on each axis of a cube of particles. The total number of particles, N, is axisN ** 3.
@@ -35,10 +35,20 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
         The number of timesteps over which the swarm should be simulated.
     timestep : float
         The size of the timestep in seconds.
+    
+    Particle Parameters
+    ----------
     rodLength : float, optional
         The length of each particle, head to tail, in metres. The default is 2 μm.
     partMass : float, optional
         The mass of each particle in kg. The default is 1E-15 kg.
+    swimmingSpeed : float, optional
+        The speed of each particle in metres per second. The default is 20.4 μm/s.
+    tumbleFreq : int, optional
+        The number of timesteps between tumbles. The default is 100.
+    
+    Interaction Parameters
+    ----------
     lennardJonesFlag : bool, optional
         Whether or not to calculate and use a Lennard-Jones potential. The default is True.
     epsilon : float, optional
@@ -49,8 +59,6 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
         Caps the repulsive force from the Lennard-Jones potential. It is defined in Newtons and takes a value of 5 fN by default.
     hydrodynamics : bool, optional
         Whether or not to calculate and use the hydrodynamic approximation. The default is True.
-    swimmingSpeed : float, optional
-        The speed of each particle in metres per second. The default is 20.4 μm/s.
     hydrodynamicThrust : float, optional
         The hydrodynamic thrust from each particle's movement in Newtons. The default is 0.57 pN.
     viscosity : float, optional
@@ -133,10 +141,7 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
             The velocities of all the points in the system.
         '''
         
-        particleTails = pos[:,0] # the positions of the two ends of the particles - the heads and tails
-        particleHeads = pos[:,-1]
-        centre = 0.5 * (particleHeads - particleTails)
-        # the mean of the head and tail position relative to the tail - the centre of the particle
+        centre = tools.findCentre(pos)[1]
         centreMag = np.linalg.norm(centre, axis=1)
         # the magnitude of the vectors describing the middle of the particles
         
@@ -189,12 +194,13 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
         vAccel += a * timestep / 2.0 # calculates velocity from acceleration
         pos += (vAccel + baseVelocity) * timestep # calculates position from total velocity for the current timestep
         pos, bondDir = constraints.bondCon(pos,bondLength,nRod) # sharply constrains the bonds to bondLength
+        if (i + 1) % tumbleFreq == 0:
+            pos = tools.tumble(pos,bondLength)
         r,sepDir = tools.separation(pos,N,nRod) # new separations
         baseVelocity = velocity(pos,r,sepDir) # new base velocity
         a = acceleration(pos,r,sepDir) # new acceleration
         vAccel += a * timestep / 2 # new velocity from acceleration
-        t += timestep # increases timestep
-        
+        t += timestep # increases time by timestep
         data[i+1] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]]) #adds the positions for the current timestep to data
         bondDir = np.moveaxis(bondDir,1,0)
         dirData[i+1] = np.array([bondDir[0],bondDir[1],bondDir[2]]) # adds the directions of the particles for the current timestep to dirData
@@ -208,4 +214,4 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
     np.save("directions",dirData)
     print("Complete.")
 
-#main(3,4,3E-6,200,1E-5) # uncomment for running in spyder
+#main(3,4,3E-6,2000,1E-6) # uncomment for running in spyder

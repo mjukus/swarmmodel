@@ -39,10 +39,7 @@ def angleCon(pos,bondStiffness):
     return Force
 
 def bondCon(pos,bondLength,nRod):
-    particleTails = pos[:,0] # the positions of the two ends of the particles - the heads and tails
-    particleHeads = pos[:,-1]
-    centre = 0.5 * (particleHeads - particleTails)
-    # the mean of the head and tail position relative to the tail - the centre of the particle
+    particleTails, centre = tools.findCentre(pos)
     centreMag = np.linalg.norm(centre, axis=1)
     # the magnitude of the vectors describing the middle of the particles
     bondDir = centreMag[:,np.newaxis]**-1 * centre

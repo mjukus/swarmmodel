@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numba import jit
 
-@jit(forceobj=True) # np.tensordot not supported by numba. Pain to remove.
+@jit(forceobj=True) # np.tensordot not supported by numba. Pain to remove, not worth.
 def bondVectorGen(grid,bondDir,bondLength,nRod):
     '''
     Generates an N x nRod x 3 array containing the positions of all points in all particles from a grid of
@@ -73,6 +73,30 @@ def separation(pos,N,nRod):
     
     sepDir = np.array([dx * r**-1, dy * r**-1, dz * r**-1]) # array of separation directions
     return r, sepDir
+
+def findCentre(pos):
+    particleTails = pos[:,0] # the positions of the two ends of the particles - the heads and tails
+    particleHeads = pos[:,-1]
+    centre = 0.5 * (particleHeads - particleTails)
+    # the mean of the head and tail position relative to the tail - the centre of the particle
+    
+    return particleTails, centre
+
+def tumble(pos,bondLength):
+    
+    N = len(pos)
+    nRod = pos.shape[1]
+    
+    particleTails, centre = findCentre(pos)
+    centreMag = np.linalg.norm(centre, axis=1) # the magnitude of the vectors describing the middle of the particles
+    randOrientation = 2*np.pi*np.random.rand(N,2)
+    bondDir = np.hstack((np.sin(randOrientation[:,1:2])*np.cos(randOrientation[:,0:1]), # produces an array f random bond directions
+                        np.sin(randOrientation[:,1:2])*np.sin(randOrientation[:,0:1]),
+                        np.cos(randOrientation[:,1:2])))
+    particleTails += centre - (0.5 * bondLength * (nRod-1) * bondDir) # finds the new positions of the particle tails post-tumble
+    pos = bondVectorGen(particleTails,bondDir,bondLength,nRod) # generates particles from the new tails
+    
+    return pos
 
 def plot(x,y,z=0):
     '''

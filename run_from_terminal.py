@@ -11,7 +11,7 @@ import sys # imports system functions for handling terminal input
 from dataclasses import dataclass # new class definition module, only works in python 3.7 up. REQUIRED.
 
 help_text = "For help and more information on optional arguments, pass final argument '?'.\n" # saves a bit of repetition in the error strings
-typesDict = {"rodLength" : float, "partMass" : float, "lennardJonesFlag" : bool, "epsilon" : float, "sigma" : float, "forceCap" : float, "hydrodynamics" : bool, "swimmingSpeed" : float, "hydrodynamicThrust" : float, "viscosity" : float} # dictionary of keyword arguments of main() and their types
+typesDict = {"rodLength" : float, "partMass" : float, "lennardJonesFlag" : bool, "epsilon" : float, "sigma" : float, "forceCap" : float, "hydrodynamics" : bool, "swimmingSpeed" : float, "tumbleFreq" : int, "hydrodynamicThrust" : float, "viscosity" : float} # dictionary of keyword arguments of main() and their types
 
 @dataclass
 class integer:
