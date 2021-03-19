@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Mar  5 04:15:23 2021
+Created on Tue Mar 16 11:49:25 2021
+
 @author: mawga
 """
+
 from mpl_toolkits.mplot3d import axes3d
 import numpy as np
 import matplotlib.pyplot as plt
@@ -96,7 +98,7 @@ def tumble(pos,bondLength):
     particleTails += centre - (0.5 * bondLength * (nRod-1) * bondDir) # finds the new positions of the particle tails post-tumble
     pos = bondVectorGen(particleTails,bondDir,bondLength,nRod) # generates particles from the new tails
     
-    return pos
+    return pos, bondDir
 
 def plot(x,y,z=0):
     '''
@@ -143,3 +145,40 @@ def quiver (data,dirData,timestep=-1):
     
     ax.quiver(data2[timestep,0],data2[timestep,1],data2[timestep,2],dirData[timestep,0],dirData[timestep,1],dirData[timestep,2], colors=colour, length=5E-7)
     plt.show()
+    
+def crystal_order(dirData,Nt,N):  
+    crystal_order_tensor = np.zeros((Nt,3,3)) #Sets up all necessary arrays
+    eigenvalue_matrix = np.zeros((Nt,3))
+    eigenvalue_matrix_max = np.zeros((Nt))
+    eigenvector_matrix = np.zeros((Nt,3,3))
+    dirData = np.moveaxis(dirData,2,1)
+    
+    for i in range (Nt):            # Calculates the order parameter at each timestep, diagonilizes the matrix
+        for j in range (N):         # and finds the maximum eigenvalue  
+            crystal_order_tensor[i] += ((3 * np.array([(dirData[i][j][0]*dirData[i][j][0], 
+                                                    dirData[i][j][0]*dirData[i][j][1],
+                                                    dirData[i][j][0]*dirData[i][j][2]),
+                                                   (dirData[i][j][1]*dirData[i][j][0], 
+                                                    dirData[i][j][1]*dirData[i][j][1],
+                                                    dirData[i][j][1]*dirData[i][j][2]),
+                                                   (dirData[i][j][2]*dirData[i][j][0], 
+                                                    dirData[i][j][2]*dirData[i][j][1],
+                                                    dirData[i][j][2]*dirData[i][j][2])
+                                                 ])) - (np.identity(3)))
+        
+        crystal_order_tensor = crystal_order_tensor / (2*N) 
+       
+        eigenvalue_matrix[i], eigenvector_matrix[i] = np.linalg.eig(crystal_order_tensor[i]) 
+        
+        eigenvalue_matrix_max[i] = np.amax(eigenvalue_matrix[i])        
+        
+     
+    fig, ax = plt.subplots()
+    t = np.arange(0.0, Nt, 1)
+    ax.plot(t, eigenvalue_matrix_max)  
+    
+    ax.set(xlabel='timestep', ylabel='Order parameter',
+       title='Order of whole swarm over time')
+    ax.grid()
+    plt.show()                                                     
+    return eigenvalue_matrix,eigenvector_matrix     

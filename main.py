@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Mar  5 04:12:57 2021
+Created on Tue Mar 16 11:46:39 2021
+
 @author: mawga
-I have a habit of overcommenting. Forgive me. Thanks. Also, PEP 8...not followed - Jack
 """
 
 import numpy as np # importing numpy
@@ -17,7 +17,7 @@ from time import perf_counter
 
 
 def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
-         rodLength: float=2E-6, partMass: float=1E-15, swimmingSpeed: float=20.4E-6, tumbleFreq: int=100,
+         rodLength: float=2E-6, partMass: float=1E-15, swimmingSpeed: float=20.4E-6, tumbleFreq: int=100000,
          lennardJonesFlag: bool=True, epsilon: float=4E-21, sigma: float=1E-6, forceCap: float=5E-15,
          hydrodynamics: bool=True, hydrodynamicThrust: float=0.57E-12, viscosity: float=1E-3):
     '''
@@ -84,7 +84,6 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
     def acceleration(pos,r,sepDir): 
         '''
         Calculates the acceleration on each point in the system from a Lennard-Jones potential and a potential well, using the positions of the points and separations between them.
-
         Parameters
         ----------
         pos : N x nRod x 3 array
@@ -93,7 +92,6 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
             The distances between all the points and other points not in the same particle.
         sepDir : N x nRod x nRod x (N - 1) array
             The directions of the separations between all points and other points not in the same particle.
-
         Returns
         -------
         a : N x nRod x 3 array
@@ -125,7 +123,6 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
     def velocity(pos,r,sepDir):
         '''
         Calculates base velocity on each point in the system from self-propulsion and a hydrodynamic approximation, using the positions of the points and separations between them.
-
         Parameters
         ----------
         pos : N x nRod x 3 array
@@ -134,7 +131,6 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
             The distances between all the points and other points not in the same particle.
         sepDir : N x nRod x nRod x (N - 1) array
             The directions of the separations between all points and other points not in the same particle.
-
         Returns
         -------
         velocity : N x nRod x 3 array
@@ -151,7 +147,7 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
         
         if hydrodynamics == True:
             # calls the hydrodynamics function if turned on
-            hydroVelocity = interactions.hydrodynamic_velocity(viscosity,hydrodynamicThrust,bondDir,r,sepDir)
+            hydroVelocity = interactions.hydrodynamic_velocity(viscosity,hydrodynamicThrust/nRod,bondDir,r,sepDir)
             velocity = swimmingVelocity + hydroVelocity
         
         else:
@@ -194,7 +190,7 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
         vAccel += a * timestep / 2.0 # calculates velocity from acceleration
         pos += (vAccel + baseVelocity) * timestep # calculates position from total velocity for the current timestep
         if (i + 1) % tumbleFreq == 0:
-            pos = tools.tumble(pos,bondLength) # the particles undergo tumbles, synchronised as they would...
+            pos, bondDir = tools.tumble(pos,bondLength) # the particles undergo tumbles, synchronised as they would...
         else:
             pos, bondDir = constraints.bondCon(pos,bondLength,nRod) # sharply constrains the bonds to bondLength
         r,sepDir = tools.separation(pos,N,nRod) # new separations
@@ -215,4 +211,4 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
     np.save("directions",dirData)
     print("Complete.")
 
-#main(3,4,3E-6,2000,1E-6) # uncomment for running in spyder
+main(4,4,3E-6,10000,1E-6) # uncomment for running in spyder
