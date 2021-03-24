@@ -30,7 +30,6 @@ def bondVectorGen(grid,bondDir,bondLength,nRod):
     '''
     N = len(bondDir) # the total number of rod-like particles is taken from the length of bondDir
     bondVector = bondLength * bondDir # bond vectors are calculated
-    
     allBonds = np.stack(np.tensordot(np.linspace(0,nRod-1,nRod),bondVector,0),1)
     # this array contains the displacements of all the points in the rod from the first point generated
     # above.
@@ -41,7 +40,7 @@ def bondVectorGen(grid,bondDir,bondLength,nRod):
     
     return pos
 
-#@jit # jit is currently being a bit problematic
+#@jit(forceobj=True) # jit is currently being a bit problematic
 def separation(pos,N,nRod):
     
     x = pos[:,:,0:1].copy()
@@ -74,6 +73,7 @@ def separation(pos,N,nRod):
     sepDir = np.array([dx * r**-1, dy * r**-1, dz * r**-1]) # array of separation directions
     return r, sepDir
 
+@jit
 def findCentre(pos):
     particleTails = pos[:,0] # the positions of the two ends of the particles - the heads and tails
     particleHeads = pos[:,-1]

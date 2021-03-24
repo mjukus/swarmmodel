@@ -10,34 +10,34 @@ import numpy as np
 import tools
 from numba import jit
     
-def angleCon(pos,bondStiffness):
-    # UNIMPLEMENTED. Not necessary, hopefully.
-    #problem is, will have to do this for each set of three points in the rod
-    particleTails = pos[:,0]
-    particleHeads = pos[:,-1]
-    centre = 0.5 * (particleHeads - particleTails)
-    N = len(particleTails)
-    
-    rij = centre
-    rik = 2 * centre
-    rij_abs = np.linalg.norm(rij,axis=1)
-    rik_abs = np.linalg.norm(rik,axis=1)
-    rijrik = rij_abs*rik_abs
-    rij2 = rij_abs*rij_abs
-    rik2 = rik_abs*rik_abs
-    rij2 = rij2[:,np.newaxis]
-    rik2 = rik2[:,np.newaxis]
-    
-    costhetajik = np.diagonal(np.dot(rij,rik.T))/rijrik
-    costhetajik = costhetajik[:,np.newaxis]
-    rijrik = rijrik[:,np.newaxis]
-    Force = np.zeros([N,3,3])
-    i=1
-    Force[:,i] = bondStiffness*((rik+rij)/rijrik-costhetajik*(rij/rij2+rik/rik2))
-    Force[:,i-1] = bondStiffness*(costhetajik*rij/rij2-rik/rijrik)
-    Force[:,i+1] = bondStiffness*(costhetajik*rik/rik2-rij/rijrik)
+#def angleCon(pos,bondStiffness):
+#    # UNIMPLEMENTED. Not necessary, hopefully.
+#    #problem is, will have to do this for each set of three points in the rod
+#    particleTails = pos[:,0]
+#    particleHeads = pos[:,-1]
+#    centre = 0.5 * (particleHeads - particleTails)
+#    N = len(particleTails)
+#    
+#    rij = centre
+#    rik = 2 * centre
+#    rij_abs = np.linalg.norm(rij,axis=1)
+#    rik_abs = np.linalg.norm(rik,axis=1)
+#    rijrik = rij_abs*rik_abs
+#    rij2 = rij_abs*rij_abs
+#    rik2 = rik_abs*rik_abs
+#    rij2 = rij2[:,np.newaxis]
+#    rik2 = rik2[:,np.newaxis]
+#    
+#    costhetajik = np.diagonal(np.dot(rij,rik.T))/rijrik
+#    costhetajik = costhetajik[:,np.newaxis]
+#    rijrik = rijrik[:,np.newaxis]
+#    Force = np.zeros([N,3,3])
+#    i=1
+#    Force[:,i] = bondStiffness*((rik+rij)/rijrik-costhetajik*(rij/rij2+rik/rik2))
+#    Force[:,i-1] = bondStiffness*(costhetajik*rij/rij2-rik/rijrik)
+#    Force[:,i+1] = bondStiffness*(costhetajik*rik/rik2-rij/rijrik)
 #    print(Force)
-    return Force
+#    return Force
 
 @jit(forceobj=True)
 def bondCon(pos,bondLength,nRod,tumbleProb):
@@ -49,9 +49,13 @@ def bondCon(pos,bondLength,nRod,tumbleProb):
                         np.cos(randOrientation[:,1:2])))
     
     particleTails, centre = tools.findCentre(pos)
-    centreMag = np.linalg.norm(centre, axis=1)
+    centreMag = np.linalg.norm(centre,axis=1)
+    #centreMag = np.empty(N)
+    #for i in range(N):
+    #    centreMag[i] = np.linalg.norm(centre[i])
+    centreMag = centreMag.reshape(-1,1)
     # the magnitude of the vectors describing the middle of the particles
-    bondDir = centreMag[:,np.newaxis]**-1 * centre
+    bondDir = centreMag**-1 * centre
     # calculates the unit vectors describing particle direction using the centres
     for i in range(N):
         if randNum[i] <= tumbleProb:
