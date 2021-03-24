@@ -115,6 +115,15 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
         else:
             a = np.zeros((3,N,nRod)) # no acceleration
             
+        wellCoef = 5E-14
+        
+        well = lambda pos : - wellCoef * pos
+        wellForce = well(pos)
+        
+        aWell = invPointMass * wellForce
+        
+        a += np.array([aWell[:,:,0],aWell[:,:,1],aWell[:,:,2]])
+
         a = np.transpose(a,[1,2,0])
         
         return a
