@@ -17,7 +17,6 @@ from time import perf_counter
 import os
 from datetime import date
 
-
 def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
          rodLength: float=2E-6, partMass: float=1E-15, swimmingSpeed: float=20.4E-6, tumbleProb: float=0.001,
          lennardJonesFlag: bool=True, epsilon: float=4E-21, sigma: float=1E-6, forceCap: float=5E-15,
@@ -85,6 +84,7 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
     made up of a self-propulsive term and a hydrodynamic approximation and the velocity from the acceleration.
     TO BE IMPLEMENTED: potential well
     '''
+
     def acceleration(pos,r,sepDir): 
         '''
         Calculates the acceleration on each point in the system from a Lennard-Jones potential and a potential well, using the positions of the points and separations between them.
@@ -121,9 +121,8 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
             a = np.zeros((3,N,nRod)) # no acceleration
             
         wellCoef = 5E-14
-        
-        well = lambda pos : - wellCoef * pos
-        wellForce = well(pos)
+
+        wellForce = interactions.well(pos,wellCoef)
         
         aWell = invPointMass * wellForce
         
@@ -133,7 +132,7 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
         
         return a
     
-    
+    @jit(forceobj=True)
     def velocity(pos,r,sepDir):
         '''
         Calculates base velocity on each point in the system from self-propulsion and a hydrodynamic approximation, using the positions of the points and separations between them.
@@ -156,8 +155,8 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
         centre = tools.findCentre(pos)[1]
         centreMag = np.linalg.norm(centre, axis=1)
         # the magnitude of the vectors describing the middle of the particles
-        
-        bondDir = (centreMag[:,np.newaxis]**-1 * centre) # bond directions as unit vectors
+        centreMag = centreMag.reshape(-1,1)
+        bondDir = centreMag**-1 * centre # bond directions as unit vectors
         
         swimmingVelocity = swimmingSpeed * np.repeat([bondDir],nRod,axis=1).reshape(N,nRod,3) # particles swim straight ahead at swiming speed
         
@@ -224,4 +223,4 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
     np.save(f"{outputDirectory}directions",dirData)
     print("Complete.")
 
-main(4,4,3E-6,10000,1E-6) # uncomment for running in spyder
+main(3,4,3E-6,100000,1E-6) # uncomment for running in spyder

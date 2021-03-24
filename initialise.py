@@ -8,7 +8,6 @@ Created on Thu Feb 18 09:43:12 2021
 import numpy as np
 import tools
 #import matplotlib.pyplot as plt
-#from numba import jit
 
 def init(axisN,partAxisSep,nRod,bondLength,centre=0):
     '''

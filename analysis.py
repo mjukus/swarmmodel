@@ -9,7 +9,7 @@ import numpy as np
 import tools
 import animation
 
-outputDirectory = "2021-03-24_64_4_10000/" # choose the directory in which the output files are to be found in format "path/to/file/from/code/directory/"
+outputDirectory = "2021-03-24_1000_4_10000/" # choose the directory in which the output files are to be found in format "path/to/file/from/code/directory/"
 quiver = False
 animate = False
 Crystal_order = True
