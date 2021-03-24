@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Mar 16 11:46:39 2021
-
+Created on Fri Mar  5 04:12:57 2021
 @author: mawga
+I have a habit of overcommenting. Forgive me. Thanks. Also, PEP 8...not followed - Jack
 """
 
 import numpy as np # importing numpy
@@ -14,10 +14,12 @@ import tools
 
 from numba import jit # importing tools for improving runtime and timing
 from time import perf_counter
+import os
+from datetime import date
 
 
 def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
-         rodLength: float=2E-6, partMass: float=1E-15, swimmingSpeed: float=20.4E-6, tumbleFreq: int=100000,
+         rodLength: float=2E-6, partMass: float=1E-15, swimmingSpeed: float=20.4E-6, tumbleProb: float=0.001,
          lennardJonesFlag: bool=True, epsilon: float=4E-21, sigma: float=1E-6, forceCap: float=5E-15,
          hydrodynamics: bool=True, hydrodynamicThrust: float=0.57E-12, viscosity: float=1E-3):
     '''
@@ -44,8 +46,8 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
         The mass of each particle in kg. The default is 1E-15 kg.
     swimmingSpeed : float, optional
         The speed of each particle in metres per second. The default is 20.4 μm/s.
-    tumbleFreq : int, optional
-        The number of timesteps between tumbles. The default is 100.
+    tumbleProb : float, optional
+        The probability to tumble for each particle each timestep. The default is 0.01.
     
     Interaction Parameters
     ----------
@@ -72,6 +74,8 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
     hydrodynamicThrust = hydrodynamicThrust / nRod # divides thrust by nRod to give the thrust from one interaction point
     #bondStiffness = 1 # for angle constraints. Likely unnecessary.
     #cutoff = 2 * sigma # truncation point above which Lennard-Jones potential is assumed zero; unimplemented and likely unnecessary
+    outputDirectory = f"{date.today()}_{str(N)}_{str(nRod)}_{str(Nt)}/"
+    os.makedirs(os.path.dirname(outputDirectory), exist_ok=True)
     
     '''
     INTERACTIONS
@@ -84,6 +88,7 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
     def acceleration(pos,r,sepDir): 
         '''
         Calculates the acceleration on each point in the system from a Lennard-Jones potential and a potential well, using the positions of the points and separations between them.
+
         Parameters
         ----------
         pos : N x nRod x 3 array
@@ -92,6 +97,7 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
             The distances between all the points and other points not in the same particle.
         sepDir : N x nRod x nRod x (N - 1) array
             The directions of the separations between all points and other points not in the same particle.
+
         Returns
         -------
         a : N x nRod x 3 array
@@ -101,17 +107,16 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
         if lennardJonesFlag == True:
             # calls the Lennard-Jones calculation if turned on
             LJForce = interactions.lennardJones(r,epsilon,sigma,forceCap)
+        
+            a_xLJ = invPointMass * sepDir[0] * - LJForce # calculates acceleration on each axis from each force
+            a_yLJ = invPointMass * sepDir[1] * - LJForce
+            a_zLJ = invPointMass * sepDir[2] * - LJForce
             
-            a_x = invPointMass * sepDir[0] * - LJForce # calculates acceleration on each axis from each force
-            a_y = invPointMass * sepDir[1] * - LJForce
-            a_z = invPointMass * sepDir[2] * - LJForce
+            a_xLJ = np.sum(a_xLJ.reshape(N*nRod,-1),axis=1).reshape(N,nRod) # sums together forces on the same point
+            a_yLJ = np.sum(a_yLJ.reshape(N*nRod,-1),axis=1).reshape(N,nRod)
+            a_zLJ = np.sum(a_zLJ.reshape(N*nRod,-1),axis=1).reshape(N,nRod)
             
-            a_x = np.sum(a_x.reshape(N*nRod,-1),axis=1).reshape(N,nRod) # sums together forces on the same point
-            a_y = np.sum(a_y.reshape(N*nRod,-1),axis=1).reshape(N,nRod)
-            a_z = np.sum(a_z.reshape(N*nRod,-1),axis=1).reshape(N,nRod)
-            
-            a = np.array([a_x,a_y,a_z])
-            
+            a = np.array([a_xLJ,a_yLJ,a_zLJ])
         else:
             a = np.zeros((3,N,nRod)) # no acceleration
             
@@ -123,7 +128,7 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
         aWell = invPointMass * wellForce
         
         a += np.array([aWell[:,:,0],aWell[:,:,1],aWell[:,:,2]])
-
+        
         a = np.transpose(a,[1,2,0])
         
         return a
@@ -132,6 +137,7 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
     def velocity(pos,r,sepDir):
         '''
         Calculates base velocity on each point in the system from self-propulsion and a hydrodynamic approximation, using the positions of the points and separations between them.
+
         Parameters
         ----------
         pos : N x nRod x 3 array
@@ -140,6 +146,7 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
             The distances between all the points and other points not in the same particle.
         sepDir : N x nRod x nRod x (N - 1) array
             The directions of the separations between all points and other points not in the same particle.
+
         Returns
         -------
         velocity : N x nRod x 3 array
@@ -156,7 +163,7 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
         
         if hydrodynamics == True:
             # calls the hydrodynamics function if turned on
-            hydroVelocity = interactions.hydrodynamic_velocity(viscosity,hydrodynamicThrust/nRod,bondDir,r,sepDir)
+            hydroVelocity = interactions.hydrodynamic_velocity(viscosity,hydrodynamicThrust,bondDir,r,sepDir)
             velocity = swimmingVelocity + hydroVelocity
         
         else:
@@ -198,10 +205,7 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
         print(f"Calculating timestep: {i+1} of {Nt}...", end="\r")
         vAccel += a * timestep / 2.0 # calculates velocity from acceleration
         pos += (vAccel + baseVelocity) * timestep # calculates position from total velocity for the current timestep
-        if (i + 1) % tumbleFreq == 0:
-            pos, bondDir = tools.tumble(pos,bondLength) # the particles undergo tumbles, synchronised as they would...
-        else:
-            pos, bondDir = constraints.bondCon(pos,bondLength,nRod) # sharply constrains the bonds to bondLength
+        pos, bondDir = constraints.bondCon(pos,bondLength,nRod,tumbleProb) # sharply constrains the bonds to  and executes random tumbles
         r,sepDir = tools.separation(pos,N,nRod) # new separations
         baseVelocity = velocity(pos,r,sepDir) # new base velocity
         a = acceleration(pos,r,sepDir) # new acceleration
@@ -216,8 +220,8 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
     print(f"\n\nCalculations completed for {N} particles ({N * nRod} interaction points) over {t:.1E} seconds with a timestep of {timestep:.1E} seconds ({Nt} timesteps).\nCalculation time: {runtime:.3f} seconds.\n\nTotal runtime: {(initRuntime + runtime):.3f} seconds.") # output key parameters and timing
     
     print("\nSaving to file...")
-    np.save("positions",data) # saves positions and directions as .npy files, for use in analysis.py
-    np.save("directions",dirData)
+    np.save(f"{outputDirectory}positions",data) # saves positions and directions as .npy files, for use in analysis.py
+    np.save(f"{outputDirectory}directions",dirData)
     print("Complete.")
 
 main(4,4,3E-6,10000,1E-6) # uncomment for running in spyder
