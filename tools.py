@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Mar 16 11:49:25 2021
-
+Created on Fri Mar  5 04:15:23 2021
 @author: mawga
 """
-
 from mpl_toolkits.mplot3d import axes3d
 import numpy as np
 import matplotlib.pyplot as plt
@@ -84,22 +82,6 @@ def findCentre(pos):
     
     return particleTails, centre
 
-def tumble(pos,bondLength):
-    
-    N = len(pos)
-    nRod = pos.shape[1]
-    
-    particleTails, centre = findCentre(pos)
-    centreMag = np.linalg.norm(centre, axis=1) # the magnitude of the vectors describing the middle of the particles
-    randOrientation = 2*np.pi*np.random.rand(N,2)
-    bondDir = np.hstack((np.sin(randOrientation[:,1:2])*np.cos(randOrientation[:,0:1]), # produces an array f random bond directions
-                        np.sin(randOrientation[:,1:2])*np.sin(randOrientation[:,0:1]),
-                        np.cos(randOrientation[:,1:2])))
-    particleTails += centre - (0.5 * bondLength * (nRod-1) * bondDir) # finds the new positions of the particle tails post-tumble
-    pos = bondVectorGen(particleTails,bondDir,bondLength,nRod) # generates particles from the new tails
-    
-    return pos, bondDir
-
 def plot(x,y,z=0):
     '''
     Simple 3D scatter plotting function.
@@ -152,7 +134,6 @@ def crystal_order(dirData,Nt,N):
     eigenvalue_matrix_max = np.zeros((Nt))
     eigenvector_matrix = np.zeros((Nt,3,3))
     dirData = np.moveaxis(dirData,2,1)
-    
     for i in range (Nt):            # Calculates the order parameter at each timestep, diagonilizes the matrix
         for j in range (N):         # and finds the maximum eigenvalue  
             crystal_order_tensor[i] += ((3 * np.array([(dirData[i][j][0]*dirData[i][j][0], 

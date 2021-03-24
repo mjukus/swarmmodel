@@ -8,6 +8,7 @@ Created on Fri Dec  4 12:14:27 2020
 import numpy as np
 #import matplotlib.pyplot as plt
 import tools
+from numba import jit
     
 def angleCon(pos,bondStiffness):
     # UNIMPLEMENTED. Not necessary, hopefully.
@@ -38,12 +39,23 @@ def angleCon(pos,bondStiffness):
 #    print(Force)
     return Force
 
-def bondCon(pos,bondLength,nRod):
+@jit(forceobj=True)
+def bondCon(pos,bondLength,nRod,tumbleProb):
+    N = len(pos)
+    randNum = np.random.rand(N) # random numbers to compare with tumbleProb and decide whether to tumble
+    randOrientation = np.random.randn(N,2) # random orientations as 2 angles
+    randBondDir = np.hstack((np.sin(randOrientation[:,1:2])*np.cos(randOrientation[:,0:1]), # produces an array f random bond directions
+                        np.sin(randOrientation[:,1:2])*np.sin(randOrientation[:,0:1]),
+                        np.cos(randOrientation[:,1:2])))
+    
     particleTails, centre = tools.findCentre(pos)
     centreMag = np.linalg.norm(centre, axis=1)
     # the magnitude of the vectors describing the middle of the particles
     bondDir = centreMag[:,np.newaxis]**-1 * centre
     # calculates the unit vectors describing particle direction using the centres
+    for i in range(N):
+        if randNum[i] <= tumbleProb:
+            bondDir[i] = randBondDir[i] # new bondDir for particles which pass probability check
     particleTails += centre - (0.5 * bondLength * (nRod-1) * bondDir)
     # finds the new positions of the particle tails post-constraint
     pos = tools.bondVectorGen(particleTails,bondDir,bondLength,nRod)
