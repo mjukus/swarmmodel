@@ -1,12 +1,18 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Mar  5 04:15:23 2021
+Created on Tue Mar 16 11:49:25 2021
+
 @author: mawga
 """
+
 from mpl_toolkits.mplot3d import axes3d
 import numpy as np
 import matplotlib.pyplot as plt
 from numba import jit
+from sklearn.cluster import KMeans
+import scipy.cluster.hierarchy as sch
+from sklearn.cluster import AgglomerativeClustering
+from sklearn.metrics import silhouette_score
 
 @jit(forceobj=True) # np.tensordot not supported by numba. Pain to remove, not worth.
 def bondVectorGen(grid,bondDir,bondLength,nRod):
@@ -30,6 +36,7 @@ def bondVectorGen(grid,bondDir,bondLength,nRod):
     '''
     N = len(bondDir) # the total number of rod-like particles is taken from the length of bondDir
     bondVector = bondLength * bondDir # bond vectors are calculated
+    
     allBonds = np.stack(np.tensordot(np.linspace(0,nRod-1,nRod),bondVector,0),1)
     # this array contains the displacements of all the points in the rod from the first point generated
     # above.
@@ -40,7 +47,7 @@ def bondVectorGen(grid,bondDir,bondLength,nRod):
     
     return pos
 
-#@jit(forceobj=True) # jit is currently being a bit problematic
+#@jit # jit is currently being a bit problematic
 def separation(pos,N,nRod):
     
     x = pos[:,:,0:1].copy()
@@ -134,6 +141,7 @@ def crystal_order(dirData,Nt,N):
     eigenvalue_matrix_max = np.zeros((Nt))
     eigenvector_matrix = np.zeros((Nt,3,3))
     dirData = np.moveaxis(dirData,2,1)
+    
     for i in range (Nt):            # Calculates the order parameter at each timestep, diagonilizes the matrix
         for j in range (N):         # and finds the maximum eigenvalue  
             crystal_order_tensor[i] += ((3 * np.array([(dirData[i][j][0]*dirData[i][j][0], 
@@ -163,3 +171,82 @@ def crystal_order(dirData,Nt,N):
     ax.grid()
     plt.show()                                                     
     return eigenvalue_matrix,eigenvector_matrix     
+
+def histogram(data,Nt,N,nRod):
+    Data = np.moveaxis(data,1,3)
+    Distance = np.array([])    
+    for i in range (N):
+        for j in range (nRod):
+            r = np.sqrt(Data[Nt][i][j][0]**2 + Data[Nt][i][j][1]**2 + Data[Nt][i][j][2]**2)
+            Distance = np.append(Distance,r)
+    plt.hist(Distance, bins = 1000)
+    plt.xlim(0,1E-3)
+    plt.xlabel("Distance from origin /m")
+    plt.ylabel("Number of interaction points")
+    plt.show()
+    
+def centres(data,Nt,N):
+    Data = np.moveaxis(data,1,3)
+    
+    Centre = np.array(Data[Nt][0][-1]+((Data[Nt][0][0] - Data[Nt][0][-1]) * 0.5))      
+    
+    for i in range (N-1):            
+        centre = (Data[Nt][i+1][-1]+((Data[Nt][i+1][0] - Data[Nt][i+1][-1]) * 0.5))
+        Centre = np.vstack((Centre,centre))
+        
+    return Centre
+
+def kMeans(data,Nt,N,n_clusters):
+    Centre = centres(data,Nt,N)
+
+    # create kmeans object
+    kmeans = KMeans(n_clusters)
+    # fit kmeans object to data
+    kmeans.fit(Centre)
+    # print location of clusters learned by kmeans object
+    #print(kmeans.cluster_centers_)
+    clusterCentres = np.moveaxis(kmeans.cluster_centers_,0,1)
+    # save new clusters for chart
+    y_km = kmeans.fit_predict(Centre)
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(clusterCentres[0],clusterCentres[1],clusterCentres[2], s=100, c = 'k')
+    for i in range (n_clusters):   
+        ax.scatter(Centre[y_km ==i,0], Centre[y_km == i,1],Centre[y_km ==i,2])
+    plt.show()  
+    
+def AggHierarchy(data,Nt,N,n_clusters):
+    Centre = centres(data,Nt,N)
+    # create dendrogram
+    dendrogram = sch.dendrogram(sch.linkage(Centre, method='ward'))
+    # create clusters
+    hc = AgglomerativeClustering(n_clusters, affinity = 'euclidean', linkage = 'ward')
+    # save clusters for chart
+    y_hc = hc.fit_predict(Centre)
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    for i in range (n_clusters):   
+        ax.scatter(Centre[y_hc ==i,0], Centre[y_hc == i,1],Centre[y_hc ==i,2])
+    plt.show() 
+    
+def BestClusterNumber(data,Nt,N): 
+    Centre = centres(data,Nt,N)
+    # A list holds the silhouette coefficients for each k
+    silhouette_coefficients = []
+    
+    # Notice you start at 2 clusters for silhouette coefficient
+    for k in range(2, 11):
+        kmeans = KMeans(n_clusters=k)
+        kmeans.fit(Centre)
+        score = silhouette_score(Centre, kmeans.labels_)
+        silhouette_coefficients.append(score)
+    plt.style.use("fivethirtyeight")
+    plt.plot(range(2, 11), silhouette_coefficients)
+    plt.xticks(range(2, 11))
+    plt.xlabel("Number of Clusters")
+    plt.ylabel("Silhouette Coefficient")
+    plt.show()
+    n_clusters = silhouette_coefficients.index(max(silhouette_coefficients)) + 2   
+    print (f'The best choice is {n_clusters} clusters')   
+    kMeans(data,Nt,N,n_clusters)
