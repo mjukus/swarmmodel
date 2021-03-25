@@ -54,6 +54,7 @@ def lennardJones(r,epsilon: float,sigma: float,forceCap: float):
 #force = lennardJones(r,4E-21,1E-6,5E-15) # lines for plotting Lennard-Jones force equation
 #tools.plot(r,force)
 
+@jit
 def well(pos, wellCoef):
     
     force = - wellCoef * pos

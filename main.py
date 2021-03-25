@@ -223,4 +223,4 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
     np.save(f"{outputDirectory}directions",dirData)
     print("Complete.")
 
-main(3,4,3E-6,100000,1E-6) # uncomment for running in spyder
+main(3,4,3E-6,10000,1E-6) # uncomment for running in spyder

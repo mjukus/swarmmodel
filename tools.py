@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Mar 16 11:49:25 2021
-
+Created on Fri Mar  5 04:15:23 2021
 @author: mawga
 """
-
 from mpl_toolkits.mplot3d import axes3d
 import numpy as np
 import matplotlib.pyplot as plt
@@ -36,7 +34,6 @@ def bondVectorGen(grid,bondDir,bondLength,nRod):
     '''
     N = len(bondDir) # the total number of rod-like particles is taken from the length of bondDir
     bondVector = bondLength * bondDir # bond vectors are calculated
-    
     allBonds = np.stack(np.tensordot(np.linspace(0,nRod-1,nRod),bondVector,0),1)
     # this array contains the displacements of all the points in the rod from the first point generated
     # above.
@@ -47,7 +44,7 @@ def bondVectorGen(grid,bondDir,bondLength,nRod):
     
     return pos
 
-#@jit # jit is currently being a bit problematic
+#@jit(forceobj=True) # jit is currently being a bit problematic
 def separation(pos,N,nRod):
     
     x = pos[:,:,0:1].copy()
@@ -141,7 +138,6 @@ def crystal_order(dirData,Nt,N):
     eigenvalue_matrix_max = np.zeros((Nt))
     eigenvector_matrix = np.zeros((Nt,3,3))
     dirData = np.moveaxis(dirData,2,1)
-    
     for i in range (Nt):            # Calculates the order parameter at each timestep, diagonilizes the matrix
         for j in range (N):         # and finds the maximum eigenvalue  
             crystal_order_tensor[i] += ((3 * np.array([(dirData[i][j][0]*dirData[i][j][0], 

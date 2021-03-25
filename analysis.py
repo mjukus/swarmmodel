@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Mar 16 11:50:51 2021
+Created on Sat Mar 13 16:23:21 2021
 
-@author: mawga
+@author: thesq
 """
 
 import numpy as np
