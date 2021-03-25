@@ -55,5 +55,3 @@ def init(axisN,partAxisSep,nRod,bondLength,centre=0):
     # plots the starting state of the system in 3 dimensions
     
     return pos, bondDir
-
-init(10,3E-6,4,5E-7)
