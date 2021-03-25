@@ -132,7 +132,7 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
         
         return a
     
-    @jit(forceobj=True)
+    #@jit(forceobj=True)
     def velocity(pos,r,sepDir):
         '''
         Calculates base velocity on each point in the system from self-propulsion and a hydrodynamic approximation, using the positions of the points and separations between them.
@@ -223,4 +223,4 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
     np.save(f"{outputDirectory}directions",dirData)
     print("Complete.")
 
-main(3,4,3E-6,100000,1E-6) # uncomment for running in spyder
+main(3,4,3E-6,10000,1E-6) # uncomment for running in spyder
