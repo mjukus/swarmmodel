@@ -132,7 +132,7 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
         
         return a
     
-    #@jit(forceobj=True)
+    @jit(forceobj=True)
     def velocity(pos,r,sepDir):
         '''
         Calculates base velocity on each point in the system from self-propulsion and a hydrodynamic approximation, using the positions of the points and separations between them.
