@@ -71,8 +71,8 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
     invPointMass = 1 / pointMass #inverse mass of each point in a particle
     t = 0 # sets the time to zero at the start
     hydrodynamicThrust = hydrodynamicThrust / nRod # divides thrust by nRod to give the thrust from one interaction point
-    #bondStiffness = 1 # for angle constraints. Likely unnecessary.
     #cutoff = 2 * sigma # truncation point above which Lennard-Jones potential is assumed zero; unimplemented and likely unnecessary
+    saveFrames = 100
     outputDirectory = f"{date.today()}_{str(N)}_{str(nRod)}_{str(Nt)}/"
     os.makedirs(os.path.dirname(outputDirectory), exist_ok=True)
     
@@ -186,12 +186,9 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
     vAccel = np.zeros((N,nRod,3)) # array describing velocity from acceleration
     a = acceleration(pos,r,sepDir) # initial acceleration
     
-    data = np.zeros((Nt+1,3,N,nRod)) # array describing the positions of all points over time
-    data[0] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]]) # adds the initial positions to data
+    data = np.zeros((int(Nt/saveFrames),3,N,nRod)) # array describing the positions of all points over time
     
-    dirData = np.zeros((Nt+1,3,N)) # array describing the directions of all points over time
-    bondDir = np.moveaxis(bondDir,1,0)
-    dirData[0] = np.array([bondDir[0],bondDir[1],bondDir[2]]) # populated with directions
+    dirData = np.zeros((int(Nt/saveFrames),3,N)) # array describing the directions of all points over time
     
     initEnd = perf_counter() # end timing the initialisation of the system
     initRuntime = initEnd - initStart
@@ -210,9 +207,10 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
         a = acceleration(pos,r,sepDir) # new acceleration
         vAccel += a * timestep / 2 # new velocity from acceleration
         t += timestep # increases time by timestep
-        data[i+1] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]]) #adds the positions for the current timestep to data
-        bondDir = np.moveaxis(bondDir,1,0)
-        dirData[i+1] = np.array([bondDir[0],bondDir[1],bondDir[2]]) # adds the directions of the particles for the current timestep to dirData
+        if i % saveFrames == 0:
+            data[int(i/saveFrames)] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]]) #adds the positions for the current timestep to data
+            bondDir = np.moveaxis(bondDir,1,0)
+            dirData[int(i/saveFrames)] = np.array([bondDir[0],bondDir[1],bondDir[2]]) # adds the directions of the particles for the current timestep to dirData
     
     mainEnd = perf_counter() # end timing the timestep calculations
     runtime = mainEnd - mainStart
@@ -223,4 +221,4 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
     np.save(f"{outputDirectory}directions",dirData)
     print("Complete.")
 
-main(3,4,3E-6,10000,1E-6) # uncomment for running in spyder
+#main(3,4,3E-6,100000,1E-6) # uncomment for running in spyder
