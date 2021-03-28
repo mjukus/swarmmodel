@@ -57,22 +57,15 @@ def separation(pos,N,nRod):
     z = z.reshape((N,nRod))
     dz = z.T - z[:,:,np.newaxis,np.newaxis] #it cannot possibly be efficient
     
-    for i in range(N):
-        dx[i,:,:,i] = 0 # ensures that every point in a particle has zero separation
-        dy[i,:,:,i] = 0 # from every other in the same particle.
-        dz[i,:,:,i] = 0
-    
     r = (dx**2 + dy**2 + dz**2)**0.5 # calculate magnitude of separations
     
-    #dx = dx.flatten() # flatten so numba works
-    #dy = dy.flatten()
-    #dz = dz.flatten()
-    #r = r.flatten()
+    for i in range(N):
+        r[i,:,:,i] = 0 # ensures that every point in a particle has zero separation from every other in the same particle.
     
-    dx = dx[r != 0].reshape(N,nRod,nRod,N-1)
-    dy = dy[r != 0].reshape(N,nRod,nRod,N-1)
-    dz = dz[r != 0].reshape(N,nRod,nRod,N-1)
-    r = r[r != 0].reshape(N,nRod,nRod,N-1) # remove all zeros to avoid nan in force
+    dx = dx[r != 0].reshape(N,nRod,nRod,-1)
+    dy = dy[r != 0].reshape(N,nRod,nRod,-1)
+    dz = dz[r != 0].reshape(N,nRod,nRod,-1)
+    r = r[r != 0].reshape(N,nRod,nRod,-1) # remove all zeros to avoid nan in force
     
     sepDir = np.array([dx * r**-1, dy * r**-1, dz * r**-1]) # array of separation directions
     return r, sepDir
