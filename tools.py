@@ -195,13 +195,22 @@ def kMeans(data,Nt,N,n_clusters):
     clusterCentres = np.moveaxis(kmeans.cluster_centers_,0,1)
     # save new clusters for plotting
     y_km = kmeans.fit_predict(Centre)
-    
+   
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     ax.scatter(clusterCentres[0],clusterCentres[1],clusterCentres[2], s=100, c = 'k')
     for i in range (n_clusters):   
         ax.scatter(Centre[y_km ==i,0], Centre[y_km == i,1],Centre[y_km ==i,2])
+    plt.xlabel("X / m", labelpad=10)
+    plt.ylabel("Y / m", labelpad=10)
+    ax.set_zlabel('Z / m', labelpad=10)   
+    #lim = 5E-6
+    #ax.set_xlim3d(-lim, lim)
+    #ax.set_ylim3d(-lim, lim)
+    #ax.set_zlim3d(-lim, lim)
+    ax.view_init(elev=20, azim=315)
     plt.show()  
+    
     
 def AggHierarchy(data,Nt,N,n_clusters):
     Centre = centres(data,Nt,N)
@@ -231,6 +240,9 @@ def BestClusterNumber(data,Nt,N):
     plt.xticks(range(2, 11))
     plt.xlabel("Number of Clusters")
     plt.ylabel("Silhouette Coefficient")
+    #red_patch = mpatches.Patch(color='C1', label='Timestep 100')
+    #blue_patch = mpatches.Patch(color='C0', label='Timestep 1E4')
+    #plt.legend(handles=[red_patch, blue_patch],fontsize=40)
     plt.show()
     n_clusters = silhouette_coefficients.index(max(silhouette_coefficients)) + 2   
     print (f'The best choice is {n_clusters} clusters')   
