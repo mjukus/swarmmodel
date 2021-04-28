@@ -187,15 +187,13 @@ def centres(data,Nt,N):
 
 def kMeans(data,Nt,N,n_clusters):
     Centre = centres(data,Nt,N)
-
-    # create kmeans object
     kmeans = KMeans(n_clusters)
-    # fit kmeans object to data
+    # fit kmeans clusters to data
     kmeans.fit(Centre)
-    # print location of clusters learned by kmeans object
+    # print location of clusters learned by kmeans
     #print(kmeans.cluster_centers_)
     clusterCentres = np.moveaxis(kmeans.cluster_centers_,0,1)
-    # save new clusters for chart
+    # save new clusters for plotting
     y_km = kmeans.fit_predict(Centre)
     
     fig = plt.figure()
@@ -207,11 +205,9 @@ def kMeans(data,Nt,N,n_clusters):
     
 def AggHierarchy(data,Nt,N,n_clusters):
     Centre = centres(data,Nt,N)
-    # create dendrogram
     dendrogram = sch.dendrogram(sch.linkage(Centre, method='ward'))
-    # create clusters
     hc = AgglomerativeClustering(n_clusters, affinity = 'euclidean', linkage = 'ward')
-    # save clusters for chart
+    # save clusters for plotting
     y_hc = hc.fit_predict(Centre)
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
@@ -224,7 +220,7 @@ def BestClusterNumber(data,Nt,N):
     # A list holds the silhouette coefficients for each k
     silhouette_coefficients = []
     
-    # Notice you start at 2 clusters for silhouette coefficient
+    # This has to start from 2 as it is comparative
     for k in range(2, 11):
         kmeans = KMeans(n_clusters=k)
         kmeans.fit(Centre)
