@@ -43,7 +43,7 @@ from numba import jit
 def bondCon(pos,bondLength,nRod,tumbleProb):
     N = len(pos)
     randNum = np.random.rand(N) # random numbers to compare with tumbleProb and decide whether to tumble
-    randOrientation = np.random.randn(N,2) # random orientations as 2 angles
+    randOrientation = np.random.rand(N,2)*2*np.pi # random orientations as 2 angles
     randBondDir = np.hstack((np.sin(randOrientation[:,1:2])*np.cos(randOrientation[:,0:1]), # produces an array f random bond directions
                         np.sin(randOrientation[:,1:2])*np.sin(randOrientation[:,0:1]),
                         np.cos(randOrientation[:,1:2])))
