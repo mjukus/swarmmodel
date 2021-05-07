@@ -23,7 +23,7 @@ def main(data):
     fig = plt.figure()
     ax = fig.add_subplot(111,projection="3d")
     
-    scatter = [ ax.scatter(data[0,0:1,i],data[0,1:2,i],data[0,2:3,i]) for i in range(data[0,1].shape[0]) ]
+    scatter = [ ax.scatter(data[0,0:1,i],data[0,1:2,i],data[0,2:3,i],s=120) for i in range(data[0,1].shape[0]) ]
     
     frames = len(data)
     

@@ -8,15 +8,17 @@ Created on Sat Mar 13 16:23:21 2021
 import numpy as np
 import tools
 import animation
+import matplotlib.pyplot as plt
 
-outputDirectory = "2021-03-28_1000_4_10000/" # choose the directory in which the output files are to be found in format "path/to/file/from/code/directory/"
+outputDirectory = "2021-05-07_27_3_100000/" # choose the directory in which the output files are to be found in format "path/to/file/from/code/directory/"
 quiver = False
-animate = False
+animate = True
 Crystal_order = False
 Histogram = False
 kMeans = False
-AggHierarchy = True
+AggHierarchy = False
 BestClusterNumber = False
+trajectory = False
 
 data = np.load(f"{outputDirectory}positions.npy") # loads in position and direction data from file
 dirData = np.load(f"{outputDirectory}directions.npy")
@@ -29,16 +31,26 @@ if animate == True:
           
 
 if Crystal_order == True:          #Creates plot of crystal order over time, input form (dirData,Nt,axisN**3)
-    tools.crystal_order(dirData,100,9**3)   
+    tools.crystal_order(dirData,1000,3**3)   
     
 if Histogram == True:              #Creates a histogram of pos at a given time, input form (data,Nt,axisN**3,nRod)
-    tools.histogram(data,90,9**3,4)    
+    tools.histogram(data,99,10**3,4)    
 
 if kMeans == True:                 #Kmeans cluster plot at a given time, input form (data,Nt,axisN**3,number of clusters)
-    tools.kMeans(data,90,9**3,2)    
+    tools.kMeans(data,0,9**3,2)    
 
 if AggHierarchy == True:           #Agg cluster plot at a given time, input form (data,Nt,axisN**3,number of clusters)
     tools.AggHierarchy(data,90,9**3,2)  
     
 if BestClusterNumber == True:      #Gives the number of clusters that best fits the data using silhoutte score and plots
-    tools.BestClusterNumber(data,90,9**3)    
+    tools.BestClusterNumber(data,0,9**3)
+
+if trajectory == True:
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+    ax.set_xlabel("x / m")
+    ax.set_ylabel("y / m")
+    ax.set_zlabel("z / m")
+    for i in range(data.shape[2]):
+        data_reshape = data[:,:,i,1].reshape((data.shape[0],data.shape[1]))
+        ax.plot(data_reshape[:,0],data_reshape[:,1],data_reshape[:,2])

@@ -152,7 +152,8 @@ def crystal_order(dirData,Nt,N):
         
      
     fig, ax = plt.subplots()
-    t = np.arange(0.0, Nt, 1)
+    t = np.arange(0, Nt, 1)
+    t = t * 100
     ax.plot(t, eigenvalue_matrix_max)  
     
     ax.set(xlabel='timestep', ylabel='Order parameter',
@@ -165,13 +166,18 @@ def histogram(data,Nt,N,nRod):
     Data = np.moveaxis(data,1,3)
     Distance = np.array([])    
     for i in range (N):
-        for j in range (nRod):
-            r = np.sqrt(Data[Nt][i][j][0]**2 + Data[Nt][i][j][1]**2 + Data[Nt][i][j][2]**2)
-            Distance = np.append(Distance,r)
-    plt.hist(Distance, bins = 1000)
-    plt.xlim(0,1E-3)
-    plt.xlabel("Distance from origin /m")
-    plt.ylabel("Number of interaction points")
+        r = np.sqrt(Data[Nt][i][0][0]**2 + Data[Nt][i][0][1]**2 + Data[Nt][i][0][2]**2)
+        Distance = np.append(Distance,r)
+        #for j in range (nRod):
+        #    r = np.sqrt(Data[Nt][i][j][0]**2 + Data[Nt][i][j][1]**2 + Data[Nt][i][j][2]**2)
+        #    Distance = np.append(Distance,r)
+    plt.hist(Distance, bins = 5000)
+    plt.xscale('log')
+    plt.xlim(0,1E-1)
+    #plt.ylim(0,700)
+    plt.xlabel("Distance from origin / m")
+    plt.ylabel("Number of particles")
+    plt.legend(['1000','10000'],title='Timesteps')
     plt.show()
     
 def centres(data,Nt,N):
@@ -187,36 +193,34 @@ def centres(data,Nt,N):
 
 def kMeans(data,Nt,N,n_clusters):
     Centre = centres(data,Nt,N)
+
+    # create kmeans object
     kmeans = KMeans(n_clusters)
-    # fit kmeans clusters to data
+    # fit kmeans object to data
     kmeans.fit(Centre)
-    # print location of clusters learned by kmeans
+    # print location of clusters learned by kmeans object
     #print(kmeans.cluster_centers_)
     clusterCentres = np.moveaxis(kmeans.cluster_centers_,0,1)
-    # save new clusters for plotting
+    # save new clusters for chart
     y_km = kmeans.fit_predict(Centre)
-   
+    
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
+    ax.set_xlabel("x / m")
+    ax.set_ylabel("y / m")
+    ax.set_zlabel("z / m")
     ax.scatter(clusterCentres[0],clusterCentres[1],clusterCentres[2], s=100, c = 'k')
     for i in range (n_clusters):   
         ax.scatter(Centre[y_km ==i,0], Centre[y_km == i,1],Centre[y_km ==i,2])
-    plt.xlabel("X / m", labelpad=10)
-    plt.ylabel("Y / m", labelpad=10)
-    ax.set_zlabel('Z / m', labelpad=10)   
-    #lim = 5E-6
-    #ax.set_xlim3d(-lim, lim)
-    #ax.set_ylim3d(-lim, lim)
-    #ax.set_zlim3d(-lim, lim)
-    ax.view_init(elev=20, azim=315)
     plt.show()  
-    
     
 def AggHierarchy(data,Nt,N,n_clusters):
     Centre = centres(data,Nt,N)
+    # create dendrogram
     dendrogram = sch.dendrogram(sch.linkage(Centre, method='ward'))
+    # create clusters
     hc = AgglomerativeClustering(n_clusters, affinity = 'euclidean', linkage = 'ward')
-    # save clusters for plotting
+    # save clusters for chart
     y_hc = hc.fit_predict(Centre)
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
@@ -229,7 +233,7 @@ def BestClusterNumber(data,Nt,N):
     # A list holds the silhouette coefficients for each k
     silhouette_coefficients = []
     
-    # This has to start from 2 as it is comparative
+    # Notice you start at 2 clusters for silhouette coefficient
     for k in range(2, 11):
         kmeans = KMeans(n_clusters=k)
         kmeans.fit(Centre)
@@ -240,9 +244,6 @@ def BestClusterNumber(data,Nt,N):
     plt.xticks(range(2, 11))
     plt.xlabel("Number of Clusters")
     plt.ylabel("Silhouette Coefficient")
-    #red_patch = mpatches.Patch(color='C1', label='Timestep 100')
-    #blue_patch = mpatches.Patch(color='C0', label='Timestep 1E4')
-    #plt.legend(handles=[red_patch, blue_patch],fontsize=40)
     plt.show()
     n_clusters = silhouette_coefficients.index(max(silhouette_coefficients)) + 2   
     print (f'The best choice is {n_clusters} clusters')   

@@ -43,10 +43,6 @@ from numba import jit
 def bondCon(pos,bondLength,nRod,tumbleProb):
     N = len(pos)
     randNum = np.random.rand(N) # random numbers to compare with tumbleProb and decide whether to tumble
-    randOrientation = np.random.rand(N,2)*2*np.pi # random orientations as 2 angles
-    randBondDir = np.hstack((np.sin(randOrientation[:,1:2])*np.cos(randOrientation[:,0:1]), # produces an array f random bond directions
-                        np.sin(randOrientation[:,1:2])*np.sin(randOrientation[:,0:1]),
-                        np.cos(randOrientation[:,1:2])))
     
     particleTails, centre = tools.findCentre(pos)
     centreMag = np.linalg.norm(centre,axis=1)
@@ -59,7 +55,17 @@ def bondCon(pos,bondLength,nRod,tumbleProb):
     # calculates the unit vectors describing particle direction using the centres
     for i in range(N):
         if randNum[i] <= tumbleProb:
-            bondDir[i] = randBondDir[i] # new bondDir for particles which pass probability check
+            orientationChange = 1.5 * np.random.randn(N,2) # normally distributed orientation change as 2 angles, prefactor is standard deviation 
+            theta = orientationChange[:,0] #Δtheta and
+            phi = orientationChange[:,1] # Δphi. Why'd I only copy across the delta idk
+            x_i = bondDir[:,0]
+            y_i = bondDir[:,1] # initial bond direction vectors
+            z_i = bondDir[:,2]
+            newx = x_i**2 * y_i**-1 * np.sin(phi) * np.cos(theta) + x_i * (np.cos(phi)*np.cos(theta) - np.sin(phi)*np.cos(theta)) - y_i * np.cos(phi) * np.sin(theta)
+            newy = x_i**2 * y_i**-1 * np.sin(phi) * np.sin(theta) + x_i * (np.cos(phi)*np.sin(theta) + np.sin(phi)*np.cos(theta)) + y_i * np.cos(phi) * np.cos(theta)
+            newz = z_i * (np.cos(theta) + np.sin(theta) * y_i * x_i**-1)
+            newBondDir = np.hstack((newx,newy,newz))
+            bondDir[i] = newBondDir[i] # new bondDir for particles which pass probability check
     particleTails += centre - (0.5 * bondLength * (nRod-1) * bondDir)
     # finds the new positions of the particle tails post-constraint
     pos = tools.bondVectorGen(particleTails,bondDir,bondLength,nRod)

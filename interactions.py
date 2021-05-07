@@ -7,7 +7,7 @@ Created on Fri Feb 19 02:22:10 2021
 
 import numpy as np
 from numba import jit
-import tools
+import matplotlib.pyplot as plt
 
 @jit(nopython=True) # just in time compiles using numba in C to give a speed increase
 def lennardJones(r,epsilon: float,sigma: float,forceCap: float):
@@ -51,8 +51,13 @@ def lennardJones(r,epsilon: float,sigma: float,forceCap: float):
     return force
 
 #r = np.linspace(1E-7,5E-6,5000)
-#force = lennardJones(r,4E-21,1E-6,5E-15) # lines for plotting Lennard-Jones force equation
-#tools.plot(r,force)
+#force, potential = lennardJones(r,4E-21,1E-6,5E-15) # lines for plotting Lennard-Jones force equation
+#plt.plot(r/1E-6,potential/4E-21)
+#plt.plot(r/1E-6,force)
+#plt.xlabel("r / σ")
+#plt.ylabel("F / N")
+#plt.xlim([0,5])
+#plt.ylim([-1E-14,6E-15])
 
 @jit
 def well(pos, wellCoef):
@@ -62,7 +67,7 @@ def well(pos, wellCoef):
     return force
 
 #@jit(forceobj=True) # seems to slow the function down
-def hydrodynamic_velocity(viscosity,force,forceDirection,separation,separationDirection):
+def hydrodynamic_velocity(viscosity,force,forceDirection,separation,separationDirection,dipoleSep):
     # separationDirection is an array of the directions between points in a particle to points in other particles, for each particle
     # forceDirection is the direction the rod is swimming in
     shape = separationDirection.shape[1:]
@@ -72,7 +77,7 @@ def hydrodynamic_velocity(viscosity,force,forceDirection,separation,separationDi
         directionalDependence[i] = np.einsum("i,i...->...",forceDirection[i],separationDirection[:,i])
         # gives cosines of the angles between directions because inputs are unit vectors
     
-    hydroVelocity = ((force/(np.pi * 8 * viscosity * (separation**2))) * ((3*(directionalDependence**2))-1)) * separationDirection #calculation
+    hydroVelocity = ((force * dipoleSep/(np.pi * 8 * viscosity * (separation**2))) * ((3*(directionalDependence**2))-1)) * separationDirection #calculation
     
     shape = hydroVelocity.shape
     hydroVelocity = np.sum(hydroVelocity.reshape((shape[0]*shape[1]*shape[2],-1)),axis=1).reshape((3,-1))

@@ -18,9 +18,9 @@ import os
 from datetime import date
 
 def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
-         rodLength: float=2E-6, partMass: float=1E-15, swimmingSpeed: float=20.4E-6, tumbleProb: float=0.001,
-         lennardJonesFlag: bool=True, epsilon: float=4E-21, sigma: float=1E-6, forceCap: float=5E-15,
-         hydrodynamics: bool=True, hydrodynamicThrust: float=0.57E-12, viscosity: float=1E-3):
+         rodLength: float=2E-6, partMass: float=1E-15, swimmingSpeed: float=20.4E-6, tumbleProb: float=3E-6,
+         lennardJonesFlag: bool=True, epsilon: float=4E-21, sigma: float=5E-7, forceCap: float=5E-15,
+         hydrodynamics: bool=True, hydrodynamicThrust: float=0.57E-12, viscosity: float=1E-3, dipoleSep: float=2E-6):
     '''
     Prepares a system of N particles before calculating accelerations and velocities and iterating over Nt timesteps. The positions are stored in an array and are saved to file after the final timestep. Throughout "particle" refers to a rod made up of nRod "interaction points".
      
@@ -46,7 +46,7 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
     swimmingSpeed : float, optional
         The speed of each particle in metres per second. The default is 20.4 μm/s.
     tumbleProb : float, optional
-        The probability to tumble for each particle each timestep. The default is 0.01.
+        The probability to tumble for each particle each timestep. The default is 3E-6 right now.
     
     Interaction Parameters
     ----------
@@ -55,7 +55,7 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
     epsilon : float, optional
         The value of the Lennard-Jones well depth, ε, in J. The default is 4E-21 J.
     sigma : float, optional
-        The value of the Lennard-Jones diameter, σ, in metres. The default is 1 μm.
+        The value of the Lennard-Jones radius, σ, in metres. The default is 0.5 μm.
     forceCap : float, optional
         Caps the repulsive force from the Lennard-Jones potential. It is defined in Newtons and takes a value of 5 fN by default.
     hydrodynamics : bool, optional
@@ -63,9 +63,12 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
     hydrodynamicThrust : float, optional
         The hydrodynamic thrust from each particle's movement in Newtons. The default is 0.57 pN.
     viscosity : float, optional
-        The viscosity of the fluid in the system in Pa S. The default is 1E-3.
+        The viscosity of the fluid in the system in Pa S. The default is 1E-3 Pa S.
+    dipoleSep : float, optional
+        The separation of the poles of the dipole in m. The default is 2 μm.
     '''
     N = axisN ** 3 # the total number of particles in the system.
+    rodLength -= 2 * sigma
     bondLength = rodLength / (nRod-1) # bond length between adjacent points in rod. nRod-1 because there is a point at 0. 
     pointMass = partMass/nRod #the mass of each point in a particle
     invPointMass = 1 / pointMass #inverse mass of each point in a particle
@@ -162,7 +165,7 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
         
         if hydrodynamics == True:
             # calls the hydrodynamics function if turned on
-            hydroVelocity = interactions.hydrodynamic_velocity(viscosity,hydrodynamicThrust,bondDir,r,sepDir)
+            hydroVelocity = interactions.hydrodynamic_velocity(viscosity,hydrodynamicThrust,bondDir,r,sepDir,dipoleSep)
             velocity = swimmingVelocity + hydroVelocity
         
         else:
@@ -186,9 +189,11 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
     vAccel = np.zeros((N,nRod,3)) # array describing velocity from acceleration
     a = acceleration(pos,r,sepDir) # initial acceleration
     
-    data = np.zeros((int(Nt/saveFrames),3,N,nRod)) # array describing the positions of all points over time
-    
-    dirData = np.zeros((int(Nt/saveFrames),3,N)) # array describing the directions of all points over time
+    data = np.zeros((int(Nt/saveFrames)+1,3,N,nRod)) # array describing the positions of all points over time
+    data[0] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]])
+    dirData = np.zeros((int(Nt/saveFrames)+1,3,N)) # array describing the directions of all points over time
+    bondDir = np.moveaxis(bondDir,1,0)
+    dirData[0] = np.array([bondDir[0],bondDir[1],bondDir[2]])
     
     initEnd = perf_counter() # end timing the initialisation of the system
     initRuntime = initEnd - initStart
@@ -207,10 +212,11 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
         a = acceleration(pos,r,sepDir) # new acceleration
         vAccel += a * timestep / 2 # new velocity from acceleration
         t += timestep # increases time by timestep
-        if i % saveFrames == 0:
-            data[int(i/saveFrames)] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]]) #adds the positions for the current timestep to data
+        if (i+1) % saveFrames == 0:
+            print(f"\nSaving timestep {i+1}\n")
+            data[int((i+1)/saveFrames)] = np.array([pos[:,:,0],pos[:,:,1],pos[:,:,2]]) #adds the positions for the current timestep to data
             bondDir = np.moveaxis(bondDir,1,0)
-            dirData[int(i/saveFrames)] = np.array([bondDir[0],bondDir[1],bondDir[2]]) # adds the directions of the particles for the current timestep to dirData
+            dirData[int((i+1)/saveFrames)] = np.array([bondDir[0],bondDir[1],bondDir[2]]) # adds the directions of the particles for the current timestep to dirData
     
     mainEnd = perf_counter() # end timing the timestep calculations
     runtime = mainEnd - mainStart
@@ -221,4 +227,4 @@ def main(axisN: int, nRod: int, partAxisSep: float, Nt: int, timestep: float,
     np.save(f"{outputDirectory}directions",dirData)
     print("Complete.")
 
-#main(3,4,3E-6,100000,1E-6) # uncomment for running in spyder
+main(3,3,3E-6,100000,1E-6) # uncomment for running in spyder
