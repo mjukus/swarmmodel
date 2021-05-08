@@ -10,15 +10,15 @@ import tools
 import animation
 import matplotlib.pyplot as plt
 
-outputDirectory = "2021-05-07_27_3_100000/" # choose the directory in which the output files are to be found in format "path/to/file/from/code/directory/"
+outputDirectory = "Output/2021-05-08_125_4_1000000/" # choose the directory in which the output files are to be found in format "path/to/file/from/code/directory/"
 quiver = False
-animate = True
-Crystal_order = False
+animate = False
+Crystal_order = True
 Histogram = False
 kMeans = False
 AggHierarchy = False
-BestClusterNumber = False
-trajectory = False
+BestClusterNumber = True
+trajectory = True
 
 data = np.load(f"{outputDirectory}positions.npy") # loads in position and direction data from file
 dirData = np.load(f"{outputDirectory}directions.npy")
@@ -31,19 +31,19 @@ if animate == True:
           
 
 if Crystal_order == True:          #Creates plot of crystal order over time, input form (dirData,Nt,axisN**3)
-    tools.crystal_order(dirData,1000,3**3)   
+    tools.crystal_order(dirData,10000,5**3)   
     
 if Histogram == True:              #Creates a histogram of pos at a given time, input form (data,Nt,axisN**3,nRod)
     tools.histogram(data,99,10**3,4)    
 
 if kMeans == True:                 #Kmeans cluster plot at a given time, input form (data,Nt,axisN**3,number of clusters)
-    tools.kMeans(data,0,9**3,2)    
+    tools.kMeans(data,10000,5**3,2)    
 
 if AggHierarchy == True:           #Agg cluster plot at a given time, input form (data,Nt,axisN**3,number of clusters)
     tools.AggHierarchy(data,90,9**3,2)  
     
 if BestClusterNumber == True:      #Gives the number of clusters that best fits the data using silhoutte score and plots
-    tools.BestClusterNumber(data,0,9**3)
+    tools.BestClusterNumber(data,10000,5**3)
 
 if trajectory == True:
     fig = plt.figure()
